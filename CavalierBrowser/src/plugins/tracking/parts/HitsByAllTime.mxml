@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<parts:StatisticUIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:parts="frameworks.cavalier.ui.parts.*" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:crescent="library://cavalier/frameworks/crescent"
+					   creationComplete="init()"  >
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.TrackingController;
+			import frameworks.cavalier.app.models.IAnalysisModel;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.parts.events.AdSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.ClipSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.PlaylistSelectorEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.collections.ArrayCollection;
+			
+			/**
+			 * @public
+			 */
+			public var affectedByGlobalSelectors:Boolean = true;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var resource:IAnalysisModel;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var allTimeStat:ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				localMessageBus.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange, false, 0, true);
+				localMessageBus.addEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange, false, 0, true);
+				localMessageBus.addEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange, false, 0, true);
+
+				if(affectedByGlobalSelectors){
+					Aggregator.aggregator.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					Aggregator.aggregator.addEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					Aggregator.aggregator.addEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					
+					resource = Aggregator.aggregator.lastSelectedAnalysisResource;
+					
+					if(resource)
+						onResourceChange();
+					
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				if(affectedByGlobalSelectors){
+					Aggregator.aggregator.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					Aggregator.aggregator.addEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					Aggregator.aggregator.addEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange, false, 0, true);
+
+				}
+
+				if(resource != Aggregator.aggregator.lastSelectedAnalysisResource){
+					resource = Aggregator.aggregator.lastSelectedAnalysisResource;
+					onResourceChange();
+				}				
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDestroy(evt:ActivityContainerEvent):void{
+				localMessageBus.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange);
+				localMessageBus.removeEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange);
+				localMessageBus.removeEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange);
+				
+				Aggregator.aggregator.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange);
+				Aggregator.aggregator.removeEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange);
+				Aggregator.aggregator.removeEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange);
+				resource = null;
+				
+				super.onDestroy(evt);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				Aggregator.aggregator.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange);
+				Aggregator.aggregator.removeEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange);
+				Aggregator.aggregator.removeEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange);
+
+				resource = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onResourceChange(evt:Event = null):void{
+				if(evt)
+					resource = evt["selectedItem"];
+				else
+					resource = Aggregator.aggregator.lastSelectedAnalysisResource;
+				
+				if(resource && resource.resourceId && resource.resourceId != "")
+					TrackingController.trackingController.analysisHitsByAllYears(resource, onDataReceived);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onDataReceived(result:ArrayCollection):void{
+				allTimeStat = result;
+			}
+			
+			/**
+			 * @public
+			 */
+			public function clear():void{
+				if(allTimeStat)
+					allTimeStat.removeAll();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:SolidColorStroke id="stroke" color="{resource.graphColor}"/>
+		<s:LinearGradient id="fill" rotation="90">
+			<s:GradientEntry color="{resource.graphColor}" alpha="0.3"/>
+			<s:GradientEntry color="{resource.graphColor}" alpha="0"/>
+		</s:LinearGradient>					
+	</fx:Declarations>
+	
+	<s:Group id="graphGroup" width="100%" height="100%"
+			 visible="{resource != null}">
+		<mx:AreaChart  id="chart" width="100%" height="100%" 
+					   dataProvider="{allTimeStat}" >
+			<mx:series>
+				<mx:AreaSeries xField="label" yField="value" areaFill="{fill}" areaStroke="{stroke}" form="curve" />
+			</mx:series>
+			
+			<mx:verticalAxis>
+				<mx:LinearAxis id="vaxis"/>
+			</mx:verticalAxis>
+			
+			<mx:verticalAxisRenderers>
+				<mx:AxisRenderer axis="{vaxis}" visible="false" tickLength="0"/>
+			</mx:verticalAxisRenderers>
+			
+			<mx:horizontalAxis>
+				<mx:CategoryAxis id="haxis" dataProvider="{allTimeStat}" categoryField="label"/>
+			</mx:horizontalAxis>
+			
+			<mx:horizontalAxisRenderers>
+				<mx:AxisRenderer axis="{haxis}"/>
+			</mx:horizontalAxisRenderers>
+			
+			<mx:backgroundElements>
+				<mx:GridLines visible="false"/>
+			</mx:backgroundElements>
+			
+		</mx:AreaChart>
+		
+		<s:Label fontSize="12" color="#9c9c9c" text="Historical Statistic"/>
+		
+	</s:Group> 
+	
+	<!-- If no clip selected -->
+	<s:Group id="infoGroup" width="100%" height="100%" visible="{resource == null}">
+		<crescent:SocketGroup width="250" horizontalCenter="0" verticalCenter="0">
+			<s:Label id="infoLabel" text="No Resource Selected" fontSize="18" color="#ffffff"
+					 horizontalCenter="0" verticalCenter="0" />
+		</crescent:SocketGroup>
+	</s:Group>
+	
+</parts:StatisticUIPart>

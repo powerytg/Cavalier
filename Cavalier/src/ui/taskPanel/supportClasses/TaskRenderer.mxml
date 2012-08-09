@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				width="94" height="77"
+			 	autoDrawBackground="false"	>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.crescent.components.List;
+			
+			import mx.collections.ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var showSeparator:Boolean = false;
+			
+			/**
+			 * @private
+			 */
+			override public function set itemIndex(value:int):void
+			{
+				super.itemIndex = value;
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				if(owner && owner is List){
+					var host:List = owner as List;
+					var dp:ArrayCollection = host.dataProvider as ArrayCollection;
+					if(dp.getItemIndex(data) == dp.length - 1)
+						showSeparator = false;
+					else
+						showSeparator = true;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<s:transitions>
+		<s:Transition toState="normal">
+			<s:Fade target="{highlight}"/>
+		</s:Transition>
+
+		<s:Transition toState="selected">
+			<s:Fade target="{highlight}"/>
+		</s:Transition>
+
+	</s:transitions>
+	
+	<!-- Background -->
+	<s:BitmapImage source="@Embed('ui/taskPanel/images/TaskDroplet.png')"/>
+	
+	<!-- Highlight glow -->
+	<s:BitmapImage id="highlight" source="@Embed('ui/taskPanel/images/TaskDropletSelected.png')"
+				   horizontalCenter="0" verticalCenter="0"
+				   alpha.normal="0" alpha.selected="1" />
+	
+	<!-- Icon -->
+	<s:BitmapImage id="iconDisplay" source="{data.icon}" horizontalCenter="0" verticalCenter="0"
+				   alpha.selected="1" alpha.normal="0.5" />
+	
+	<!-- Separator -->
+	<s:BitmapImage source="@Embed('ui/taskPanel/images/TaskSeparator.png')"
+				   right="5" verticalCenter="0"
+				   visible="{showSeparator}" /> 
+	
+</s:ItemRenderer>

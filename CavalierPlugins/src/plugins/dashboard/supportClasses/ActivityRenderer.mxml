@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+			 	autoDrawBackground="false" 
+				xmlns:crescent="library://cavalier/frameworks/crescent"
+			 	width="260" maxHeight="{width / 1.67}"	
+			 	removedFromStage="onRemovedFromStage()"	
+			 	addedToStage="onAddedToStage()"	>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.ui.activities.managers.ActivityManager;
+			import frameworks.crescent.activity.Activity;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.events.ItemClickEvent;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var thumbnail:BitmapData;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var activity:Activity;
+			
+			/**
+			 * @private
+			 */
+			override public function set data(value:Object):void{
+				super.data = value;
+				activity = value as Activity;
+				
+				if(!activity)
+					return;
+				
+				try{	
+					var proxy:BitmapImage = ActivityManager.activityManager.activityDeck.getProxyOf(activity);
+					thumbnail = proxy.bitmapData;				
+					
+					activity.removeEventListener(ActivityContainerEvent.PROXY_UPDATED, onProxyUpdated);
+					activity.addEventListener(ActivityContainerEvent.PROXY_UPDATED, onProxyUpdated, false, 0, true);
+				}
+				catch(e:Error){
+					// Ignore
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onProxyUpdated(evt:ActivityContainerEvent):void{
+				thumbnail = evt.proxy.bitmapData;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onCloseButtonClick():void
+			{
+				if(activity && activity.canClose){
+					activity.removeEventListener(ActivityContainerEvent.PROXY_UPDATED, onProxyUpdated);
+					
+					var evt:ActivityContainerEvent = new ActivityContainerEvent(ActivityContainerEvent.CLOSE_ACTIVITY, true);
+					evt.activity = activity;
+					dispatchEvent(evt);
+				}
+				
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onClick():void{
+				var evt:ItemClickEvent = new ItemClickEvent(ItemClickEvent.ITEM_CLICK, true);
+				evt.item = activity;
+				dispatchEvent(evt);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onRemovedFromStage():void{
+				if(activity)
+					activity.removeEventListener(ActivityContainerEvent.PROXY_UPDATED, onProxyUpdated);
+				
+				thumbnail = null;
+				activity = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAddedToStage():void{
+				activity = data as Activity;
+				
+				if(activity){
+					activity.removeEventListener(ActivityContainerEvent.PROXY_UPDATED, onProxyUpdated);
+					activity.addEventListener(ActivityContainerEvent.PROXY_UPDATED, onProxyUpdated, false, 0, true);
+					thumbnail = ActivityManager.activityManager.activityDeck.getProxyOf(activity).bitmapData;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<crescent:Tile left="0" right="20" top="20" bottom="0" faceColor="#000000" actAsButton="true"
+				   glowColor="#60edfa" 
+				   click="onClick()" >
+		<s:BitmapImage source="{thumbnail}" scaleMode="letterbox" fillMode="scale"
+					   horizontalAlign="center" verticalAlign="middle" 
+					   left="0" right="0" top="0" bottom="0"/>
+		
+		<s:BitmapImage source="{activity.icon}" right="0" bottom="0"/>
+	</crescent:Tile>
+	
+	<!-- Close  button -->
+	<crescent:RedCircularButton right="0" top="0" icon="@Embed('/images/CloseIcon.png')"
+	   						    click="onCloseButtonClick()"	
+							 	visible="{activity.canClose}"	/>
+	
+</s:ItemRenderer>

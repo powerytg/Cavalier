@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:crescent="library://cavalier/frameworks/crescent"
+		 currentState="noContent">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.ui.activities.events.ActivityTemplateEvent;
+			import frameworks.cavalier.ui.parts.UIPart;
+			
+			/**
+			 * @private
+			 */
+			private var _part:UIPart;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public function get part():UIPart
+			{
+				return _part;
+			}
+
+			/**
+			 * @private
+			 */
+			public function set part(value:UIPart):void
+			{
+				// Remove old part
+				if(_part){
+					contentGroup.removeAllElements();
+					_part.destroy();
+				}
+				
+				// Assign new UI part
+				_part = value;
+
+				if(_part != null){
+					currentState = "normal";
+					contentGroup.addElement(_part);
+				}
+				else
+					currentState = "noContent";
+			}
+
+			
+			/**
+			 * @protected
+			 */
+			protected function onAddButtonClick():void{
+				var evt:ActivityTemplateEvent = new ActivityTemplateEvent(ActivityTemplateEvent.CHOOSE_UI_PART, true);
+				evt.selectedUIPartHolder = this;
+				dispatchEvent(evt);
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onCloseButtonClick():void{
+				part = null;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="noContent"/>
+		<s:State name="editMode"/>
+	</s:states>
+	
+	<!-- Empty state -->
+	<crescent:SocketGroup id="addGroup" left="0" right="0" top="0" bottom="0"
+						  includeIn="noContent, editMode"
+						  visible="{part == null}" >
+		<crescent:Button label="Add UI Part" horizontalCenter="0" verticalCenter="0" click="onAddButtonClick()"/>
+	</crescent:SocketGroup>
+	
+	<!-- Normal state -->
+	<s:Group id="contentGroup"
+			 left="0" right="0" top="0" bottom="0"
+			 visible.noContent="false" />
+	
+	<!-- Edit state -->
+	<crescent:RedCircularButton right="0" top="0" icon="@Embed('../images/CloseIcon.png')"
+							 	includeIn="editMode" visible="{part != null}"
+							 	click="onCloseButtonClick()"	/>
+</s:Group>

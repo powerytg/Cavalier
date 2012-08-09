@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:supportClasses="plugins.resources.parts.supportClasses.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.utils.TimeUtil;
+			
+			import mx.events.FlexEvent;
+			
+			import org.osmf.events.TimeEvent;
+			
+			import plugins.resources.parts.ClipPreview;
+			
+			/**
+			 * @private
+			 */
+			private var _currentTime:Number;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public function get currentTime():Number
+			{
+				return _currentTime;
+			}
+
+			/**
+			 * @private
+			 */
+			public function set currentTime(value:Number):void
+			{
+				_currentTime = value;
+				if(!timeSliderDragging)
+					timeSlider.value = _currentTime;
+			}
+
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var title:String;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var duration:Number;
+			
+			/**
+			 * @public
+			 */
+			public var video:ClipPreview;
+			
+			/**
+			 * @private
+			 */
+			private var timeSliderDragging:Boolean = false;
+
+			/**
+			 * @private
+			 */
+			private function onPlayClick():void{
+				video.onPlayButtonClick();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimeSliderMouseDown(evt:MouseEvent):void{
+				evt.stopPropagation();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimeSliderChangeStart(evt:FlexEvent):void{
+				timeSliderDragging = true;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimeSliderChangeEnd(evt:FlexEvent):void{
+				video.seek(timeSlider.value);
+				timeSliderDragging = false;
+			}
+		]]>
+	</fx:Script>
+	
+	<!-- Dock background -->
+	<s:BitmapImage source="@Embed('images/Dock.png')" bottom="0"/>
+
+	<!-- Trees -->
+	<s:BitmapImage source="@Embed('images/Trees.png')" left="258" bottom="22"/>
+	
+	<!-- Control panel -->
+	<s:Group bottom="21" right="51">
+		<s:BitmapImage source="@Embed('images/ControlPanel.png')"/>
+		
+		<!-- Title -->
+		<s:HGroup left="12" top="6" verticalAlign="middle">
+			<s:Label color="#39b54a" fontSize="12" text="{TimeUtil.getTimeCode(currentTime)}"/>
+			<s:BitmapImage source="@Embed('images/Arrow.png')"/>
+			<s:Label color="#39b54a" fontSize="12" text="{title}"/>
+		</s:HGroup>
+		
+		<s:Button id="playButton" top="25" left="9" skinClass="plugins.annotations.activities.supportClasses.PlayButtonSkin"
+				  click="onPlayClick()" />
+		<supportClasses:PlayerChromeSlider id="timeSlider" width="100%"
+										   bottom="5" left="70" right="10"  
+										   minimum="0" maximum="{duration}"
+										   mouseDown="onTimeSliderMouseDown(event)" 
+										   changeStart="onTimeSliderChangeStart(event)" 
+										   changeEnd="onTimeSliderChangeEnd(event)" />
+	</s:Group>
+	
+	
+</s:Group>

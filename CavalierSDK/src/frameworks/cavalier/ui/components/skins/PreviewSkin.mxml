@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark">
+	<!-- host component -->
+	<fx:Metadata>
+		[HostComponent("frameworks.cavalier.ui.components.Preview")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				frame.graphics.clear();
+				frame.graphics.lineStyle(1, 0xffffff);
+				frame.graphics.drawRect(0, 0, unscaledWidth, unscaledHeight);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<!-- Shadow -->
+	<s:Image left="-8" top="-6" bottom="-11" right="-7" 
+			 source="@Embed('images/DropShadow.png')" 
+			 scaleMode="stretch" fillMode="scale"/>
+	
+	<!-- Image -->
+	<s:Image id="image" left="0" right="0" top="0" bottom="0"
+			 source="{hostComponent.source}" 
+			 scaleMode="stretch" fillMode="scale"
+			 horizontalAlign="center" verticalAlign="middle"/>
+	
+	<s:Group id="frame" left="0" right="0" top="0" bottom="0"/>
+	
+</s:Skin>

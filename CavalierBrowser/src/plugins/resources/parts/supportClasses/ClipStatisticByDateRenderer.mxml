@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+			 	xmlns:crescent="library://cavalier/frameworks/crescent"	
+				height="55" 
+			 	autoDrawBackground="false"	>
+	<fx:Declarations>
+		<s:Group id="yearGroup" width="100%" height="100%">
+			<s:Label verticalCenter="0" left="5"
+					 text="{title}"
+					 color="#666666" color.selected="#000000" fontSize="30"
+					 fontFamily="Walkway SemiBold" >
+			</s:Label> 		
+		</s:Group>
+		
+		<s:HGroup id="monthGroup" verticalAlign="middle"
+				  width="100%" height="100%"
+				  paddingLeft="15" >
+			<s:BitmapImage source="@Embed('plugins/resources/parts/images/Item.png')"/>
+			<s:Label color="#cccccc" fontSize="18" text="{title}"/>
+			<crescent:NumericLabel text="{data.numClips}"/>
+		</s:HGroup>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.stat.MonthStatistic;
+			import frameworks.cavalier.app.models.stat.SpecialStatisticEntries;
+			import frameworks.cavalier.app.models.stat.YearStatistic;
+			import frameworks.cavalier.app.utils.DateUtil;
+
+			/**
+			 * @public
+			 */
+			 [Bindable]
+			public var title:String;
+			
+			/**
+			 * @private
+			 */
+			override protected function commitProperties():void{
+				super.commitProperties();
+	
+				contentHolder.removeAllElements();
+				if(data is YearStatistic){
+					title = data.year;
+					contentHolder.addElement(yearGroup);
+				}
+				else if(data is MonthStatistic){
+					if(data.month == SpecialStatisticEntries.ALL)
+						title = "all";
+					else if(data.month == SpecialStatisticEntries.PENDING)
+						title = "pending";
+					else
+						title = DateUtil.monthNames[data.month];
+					
+					contentHolder.addElement(monthGroup);
+				}
+
+			}
+
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				if(data is YearStatistic){
+					contentHolder.graphics.clear();
+					contentHolder.graphics.lineStyle(1, 0x959595);
+					contentHolder.graphics.moveTo(0, unscaledHeight);
+					contentHolder.graphics.lineTo(unscaledWidth, unscaledHeight);
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<crescent:DefaultItemRendererBackground width="100%" height="100%"
+											alpha.normal="0" alpha.selected="1"/>
+	
+	<s:Group id="contentHolder" width="100%" height="100%"/>
+</s:ItemRenderer>

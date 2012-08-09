@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 cacheAsBitmap="true" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import spark.filters.BlurFilter;
+			
+			/**
+			 * @private
+			 * 
+			 * Default background
+			 */
+			[Embed('images/DefaultBackground2.jpg')]
+			public var defaultBackground:Class;
+			
+			/**
+			 * @private
+			 */
+			private var _source:Object = defaultBackground;
+
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public function get source():Object
+			{
+				return _source;
+			}
+
+			/**
+			 * @private
+			 */
+			public function set source(value:Object):void
+			{
+				if(_source != value){
+					_source = value;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BitmapImage id="backgroundImage" source="{source}"
+				   scaleMode="stretch" fillMode="scale"
+				   left="0" right="0" top="0" bottom="0">
+		<s:filters>
+			<s:BlurFilter blurX="50" blurY="50"/>
+		</s:filters>
+	</s:BitmapImage>
+
+	<s:Rect  left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#000000" alpha="0.65"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:BitmapImage source="@Embed('images/BackgroundPattern.png')"
+				   fillMode="repeat" alpha="0.17" blendMode="multiply"
+				   left="0" right="0" top="0" bottom="0" />
+
+</s:Group>

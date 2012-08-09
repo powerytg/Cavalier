@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+			 	autoDrawBackground="false"	>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			
+			/**
+			 * @private
+			 */
+			[Embed('/images/NoCoverArt.jpg')]
+			[Bindable]
+			private var defaultCoverArt:Class;
+
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				if(currentState == "normal"){
+					graphics.clear();
+					graphics.lineStyle(1, 0x000000);
+					graphics.beginFill(0x000000, 0.5);
+					graphics.drawRect(0, 0, unscaledWidth, unscaledHeight);
+					graphics.endFill();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<s:BitmapImage source="{data.previewUrl == '' ? defaultCoverArt : data.previewUrl}"
+				   left="0" right="0" top="0" bottom="0"
+				   scaleMode="stretch" fillMode="scale"/> 
+	
+	<s:BitmapImage source="@Embed(source='plugins/resources/parts/images/TileSelected.png', scaleGridLeft=7, scaleGridTop=8, scaleGridRight=171, scaleGridBottom=92)"
+				   left="-6" right="-7" top="-8" bottom="-7"
+				   scaleMode="stretch" fillMode="scale"
+				   visible="false" visible.selected="true" /> 
+	
+	<s:BitmapImage left="-10" top="-10" source="@Embed('/images/PendingItem.png')"
+				   visible="{data.id == null}" />
+
+</s:ItemRenderer>

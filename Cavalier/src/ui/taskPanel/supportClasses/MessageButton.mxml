@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:cavalier="library://cavalier/frameworks/cavalier"
+		  xmlns:crescent="library://cavalier/frameworks/crescent"
+		  height="60" 
+		  creationComplete="init()"  
+		  mouseDown="onMouseDown(event)" >
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.messaging.SystemBus;
+			import frameworks.cavalier.messaging.events.MessageEvent;
+			import frameworks.cavalier.messaging.events.SystemBusEvent;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var readPercentage:Number;
+			
+			/**
+			 * @private
+			 */
+			private var highlightTf:ColorTransform = new ColorTransform();
+			
+			/**
+			 * @private
+			 */
+			private var normalTf:ColorTransform = new ColorTransform();
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				SystemBus.systemBus.addEventListener(SystemBusEvent.NEW_MESSAGE, onChange);
+				SystemBus.systemBus.addEventListener(MessageEvent.STATUS_CHANGE, onChange);
+				onChange();
+				
+				highlightTf.color = 0x44f2e4;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onChange(evt:Event = null):void{
+				var numUnread:Number = Number(SystemBus.systemBus.activeMessages.length);
+				var numRead:Number = Number(SystemBus.systemBus.inactiveMessages.length);
+				readPercentage = numRead / (numRead + numUnread) * 100;
+
+				if(Math.floor(readPercentage) == 100){
+					messageGroup.visible = false;
+					drawerButton.visible = true;
+				}
+				else{
+					messageGroup.visible = true;
+					drawerButton.visible = false;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onMouseDown(evt:MouseEvent):void{
+				stage.addEventListener(MouseEvent.MOUSE_UP, onMouseUp);
+				ringMeter.transform.colorTransform = highlightTf;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onMouseUp(evt:MouseEvent):void{
+				stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseUp);
+				ringMeter.transform.colorTransform = normalTf;
+			}			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!-- Message meter -->
+	<s:HGroup id="messageGroup" verticalAlign="middle">
+		<s:Group width="60" height="60">
+			<cavalier:RingMeter id="ringMeter" width="100%" height="100%"
+								innerRadius="15" thickness="9"
+								percentage="{readPercentage}"	/>
+			
+			<s:Label id="numLabel" fontSize="14" text="{SystemBus.systemBus.activeMessages.length}"
+					 horizontalCenter="0" verticalCenter="0" />
+			
+		</s:Group>
+		<s:Label id="messageLabel" text="messages" fontSize="16" color="#b7e3f8"/>		
+	</s:HGroup>
+	
+	<!-- Shown when there's no new message -->
+	<crescent:CircularButton id="drawerButton" right="0"
+							 icon="@Embed('ui/sidePanel/images/Expand.png')" />
+	
+</s:Group>

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+
+<!-- Cavalier SDK -->
+
+<componentPackage>
+	<!--  Plugins -->
+    <component id="Plugin" class="frameworks.cavalier.plugin.Plugin"/>
+    <component id="UIPart" class="frameworks.cavalier.ui.parts.UIPart"/>
+    
+    <!--  Common UI Components -->
+    <component id="ActionTile" class="frameworks.cavalier.ui.components.ActionTile"/>
+    <component id="InfoTile" class="frameworks.cavalier.ui.components.InfoTile"/>
+    <component id="Preview" class="frameworks.cavalier.ui.components.Preview"/>
+    <component id="PopOutButton" class="frameworks.cavalier.ui.components.PopOutButton"/>
+    <component id="PagerSlider" class="frameworks.cavalier.ui.components.PagerSlider"/>
+    <component id="RingMeter" class="frameworks.cavalier.ui.components.RingMeter"/>
+    <component id="Timeline" class="frameworks.cavalier.ui.components.Timeline"/>
+    <component id="BadgeSection" class="frameworks.cavalier.ui.components.BadgeSection"/>
+    <component id="BadgeSectionTitleBar" class="frameworks.cavalier.ui.components.BadgeSectionTitleBar"/>
+    
+    <!--  Extended Activiti Classes -->
+    <component id="ActivityTemplate" class="frameworks.cavalier.ui.activities.ActivityTemplate"/>
+    
+    <!--  Default Message Renderers -->
+    <component id="MessageRenderer" class="frameworks.cavalier.ui.messaging.MessageRenderer"/>
+    <component id="LogRenderer" class="frameworks.cavalier.ui.messaging.LogRenderer"/>
+    <component id="TextMessageRenderer" class="frameworks.cavalier.ui.messaging.TextMessageRenderer"/>
+    
+    <!--  Indicators -->
+    <component id="IndicatorBase" class="frameworks.cavalier.ui.messaging.IndicatorBase"/>
+</componentPackage>

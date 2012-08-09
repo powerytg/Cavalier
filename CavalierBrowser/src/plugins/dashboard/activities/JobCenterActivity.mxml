@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   title="job center"
+				   icon="@Embed('images/JobCenterActivityIcon.png')" >
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.models.jobs.Job;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			
+			import mx.collections.ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			private function onCommitClick():void{
+				JobController.jobController.commit();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onClearAllClick():void{
+				var jobsToCancel:ArrayCollection = new ArrayCollection();
+				jobsToCancel.addAll(JobController.jobController.jobs);
+				for each(var job:Job in jobsToCancel){
+					JobController.jobController.cancelJob(job);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup width="100%" height="100%" gap="20">
+		<crescent:Section title="Pending Jobs" width="30%">
+			<s:VGroup width="100%" paddingTop="20">
+				<s:Label text="These are the database transactions that yet to commit to the server"
+						 width="100%" color="#696969" />
+				<s:Spacer height="25"/>
+				<crescent:Button id="commitButton" label="Commit Jobs" width="100%" click="onCommitClick()"/>
+				<crescent:RedButton id="clearAllButton" label="Clear All" width="100%" click="onClearAllClick()"/>
+			</s:VGroup>			
+		</crescent:Section>
+		
+		<crescent:List id="jobList" width="100%" height="100%"
+					   dataProvider="{JobController.jobController.jobs}"
+					   itemRenderer="plugins.dashboard.supportClasses.JobRenderer" />
+	</s:HGroup>
+
+	
+</crescent:Activity>

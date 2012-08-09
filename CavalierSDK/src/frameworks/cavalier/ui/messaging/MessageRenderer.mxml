@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+			 	autoDrawBackground="false"	>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.messaging.IMessageRenderer;
+			import frameworks.cavalier.messaging.models.Log;
+			import frameworks.cavalier.messaging.models.MessageBase;
+			import frameworks.cavalier.messaging.models.TextMessage;
+			
+			import mx.core.IVisualElement;
+			import mx.core.UIComponent;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var message:MessageBase;
+			
+			/**
+			 * @public
+			 */
+			override public function set data(value:Object):void{
+				super.data = value;
+				
+				if(!value)
+					return;
+				
+				message = value as MessageBase;
+				
+				// Create a renderer
+				var renderer:IMessageRenderer;
+				
+				if(message.renderer != null){
+					var rendererClass:Class = message.renderer;
+					renderer = new rendererClass() as IMessageRenderer;
+				}
+				else{
+					if(message is Log)
+						renderer = new LogRenderer;
+					else if(message is TextMessage)
+						renderer = new TextMessageRenderer;
+				}
+				
+				renderer.data = data;
+				
+				var visualRenderer:IVisualElement = renderer as IVisualElement;
+				visualRenderer.percentWidth = 100;
+				contentGroup.addElement(visualRenderer);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Group id="contentGroup" width="100%"/>
+	
+</s:ItemRenderer>

@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				 xmlns:crescent="library://cavalier/frameworks/crescent" 
+				 canPopOut="true" 
+				 affectedDomain="global"
+				 creationComplete="init()" xmlns:supportClasses="plugins.resources.parts.supportClasses.*" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.events.ChromeEvent;
+			import frameworks.cavalier.app.events.MetricsEvent;
+			import frameworks.cavalier.app.events.PlaylistEvent;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.ModelBase;
+			import frameworks.cavalier.app.models.Playlist;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.app.models.videoMetrics.VideoMetrics;
+			import frameworks.cavalier.ui.parts.events.ClipSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.PlaylistSelectorEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.events.FlexEvent;
+			
+			import org.osmf.events.MediaPlayerStateChangeEvent;
+			import org.osmf.events.TimeEvent;
+			
+			/**
+			 * @private
+			 */
+			private var timeSliderDragging:Boolean = false;
+			
+			/**
+			 * @private
+			 */
+			private var _currentClip:Clip;
+
+			/**
+			 * @private
+			 */
+			public function get currentClip():Clip
+			{
+				return _currentClip;
+			}
+
+			/**
+			 * @private
+			 */
+			public function set currentClip(value:Clip):void
+			{
+				_currentClip = value;
+				if(videoDisplay.playing)
+					videoDisplay.stop();
+				
+				videoDisplay.source = _currentClip.url;
+				videoDisplay.play();
+			}
+
+			/**
+			 * @private
+			 */
+			private var _videoSource:ModelBase;
+
+			/**
+			 * @private
+			 */
+			public function get videoSource():ModelBase
+			{
+				return _videoSource;
+			}
+
+			/**
+			 * @private
+			 */
+			public function set videoSource(value:ModelBase):void
+			{
+				if(_videoSource != value){
+					// Remove listeners from previous playlist object
+					if(_videoSource)
+						_videoSource.removeEventListener(PlaylistEvent.PLAYLIST_LOADED, onPlaylistLoaded);
+					
+					// Assign the new playlist
+					_videoSource = value;
+					
+					if(_videoSource){
+						_videoSource.addEventListener(PlaylistEvent.PLAYLIST_LOADED, onPlaylistLoaded, false, 0, true);
+						
+						if(_videoSource is Playlist && (_videoSource as Playlist).clips.length != 0)
+							currentClip = (_videoSource as Playlist).clips.getItemAt(0) as Clip;
+						else if(_videoSource is Clip)
+							currentClip = _videoSource as Clip;						
+					}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private var metrics:VideoMetrics;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				Aggregator.aggregator.addEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onPlaylistChange, false, 0, true);
+				Aggregator.aggregator.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onClipChange, false, 0, true);
+
+				// Metrics events
+				videoDisplay.addEventListener(MetricsEvent.READY, onMetricsReadyFromVideoDisplay, false, 0, true);
+				localMessageBus.addEventListener(MetricsEvent.REQUEST_METRICS, onMetricsRequested, false, 0, true);
+				
+				// Grab the playlist from the Aggregator if available
+				videoSource = Aggregator.aggregator.lastSelectedResource;
+				
+				// Hide background
+				dispatchEvent(new ChromeEvent(ChromeEvent.HIDE_BACKGROUND, true));
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onPlaylistChange(evt:PlaylistSelectorEvent):void{
+				videoSource = evt.selectedItem;
+			}
+
+			/**
+			 * @private
+			 */
+			private function onClipChange(evt:ClipSelectorEvent):void{
+				videoSource = evt.selectedItem;
+			}
+
+			/**
+			 * @private
+			 */
+			private function onPlaylistLoaded(evt:PlaylistEvent):void{
+				if(!(_videoSource is Playlist))
+					return;
+				
+				var playlist:Playlist = _videoSource as Playlist;
+				if(playlist.clips.length != 0)
+					currentClip = playlist.clips.getItemAt(0) as Clip;
+				else{
+					errorGroup.visible = true;
+					errorText.text = "Playlist is empty";
+				}
+			}
+
+			/**
+			 * @private
+			 */
+			private function onMediaPlayerStateChange(evt:MediaPlayerStateChangeEvent):void{
+				if(evt.state == "playbackError"){
+					errorGroup.visible = true;
+					errorText.text = "Error occurred while processing the video";
+				}
+				else{
+					errorGroup.visible = false;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onMetricsRequested(evt:MetricsEvent):void{
+				if(!metrics)
+					return;
+				
+				var event:MetricsEvent = new MetricsEvent(MetricsEvent.READY);
+				event.metrics = metrics;
+				localMessageBus.dispatchEvent(event);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onMetricsReadyFromVideoDisplay(evt:MetricsEvent):void{
+				metrics = evt.metrics;
+				
+				var event:MetricsEvent = new MetricsEvent(MetricsEvent.READY);
+				event.metrics = metrics;
+				localMessageBus.dispatchEvent(event);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onPlayButtonClick():void{
+				if(videoDisplay.playing)
+					videoDisplay.pause();
+				else
+					videoDisplay.play();
+			}
+
+			/**
+			 * @private
+			 */
+			private function playNextClip():void{
+				if(!(_videoSource is Playlist))
+					return;
+				
+				var playlist:Playlist = _videoSource as Playlist;
+				
+				if(!playlist || playlist.clips.length == 0)
+					return;
+				
+				if(!currentClip){
+					currentClip = playlist.clips.getItemAt(0) as Clip;
+					return;
+				}
+				
+				var currentIndex:Number = playlist.clips.getItemIndex(currentClip);
+				if(currentIndex == -1)
+					return;
+				
+				var nextIndex:Number = currentIndex == playlist.clips.length - 1 ? 0 : currentIndex + 1;
+				currentClip = playlist.clips.getItemAt(nextIndex) as Clip;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onNextButtonClick():void{
+				playNextClip();
+			}
+
+			/**
+			 * @private
+			 */
+			private function onTimeChange(evt:TimeEvent):void{
+				if(!timeSliderDragging)
+					timeSlider.value = evt.time;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimeComplete(evt:TimeEvent):void{
+				playNextClip();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimeSliderMouseDown(evt:MouseEvent):void{
+				evt.stopPropagation();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimeSliderChangeStart(evt:FlexEvent):void{
+				timeSliderDragging = true;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimeSliderChangeEnd(evt:FlexEvent):void{
+				videoDisplay.seek(timeSlider.value);
+				timeSliderDragging = false;
+			}
+			
+//			/**
+//			 * @private
+//			 */
+//			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+//				super.updateDisplayList(unscaledWidth, unscaledHeight);
+//				graphics.clear();
+//				graphics.beginFill(0x000000);
+//				graphics.drawRect(0, 0, unscaledWidth, unscaledHeight);
+//				graphics.endFill();
+//			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				if(videoDisplay.playing)
+					videoDisplay.stop();
+				
+				Aggregator.aggregator.removeEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onPlaylistChange);
+				Aggregator.aggregator.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onClipChange);
+
+				// OK to show the background now
+				dispatchEvent(new ChromeEvent(ChromeEvent.SHOW_BACKGROUND, true));
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				Aggregator.aggregator.addEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onPlaylistChange, false, 0, true);
+				Aggregator.aggregator.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onClipChange, false, 0, true);
+
+				// Hide any backgrounds to ensure stagevideo is visible
+				dispatchEvent(new ChromeEvent(ChromeEvent.HIDE_BACKGROUND, true));
+				
+				// Upon re-activited, check if the video we are playing is the same of the resource currently being selected
+				if(videoSource != Aggregator.aggregator.lastSelectedResource)
+					videoSource = Aggregator.aggregator.lastSelectedResource;
+				else
+					videoDisplay.play();
+			}
+			
+			/**
+			 * @private
+			 */
+			override public function destroy():void{
+				dispatchEvent(new ChromeEvent(ChromeEvent.SHOW_BACKGROUND, true));
+
+				videoDisplay.removeEventListener(MetricsEvent.READY, onMetricsReadyFromVideoDisplay);
+				localMessageBus.removeEventListener(MetricsEvent.REQUEST_METRICS, onMetricsRequested);
+
+				Aggregator.aggregator.removeEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onPlaylistChange);
+				Aggregator.aggregator.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onClipChange);
+				videoSource = null;
+
+				super.destroy();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<!-- Video surface -->
+	<supportClasses:AdvancedVideoDisplay id="videoDisplay"
+										 left="0" right="0" top="0" bottom="0"
+										 autoPlay="true" scaleMode="zoom"
+										 mediaPlayerStateChange="onMediaPlayerStateChange(event)"
+										 currentTimeChange="onTimeChange(event)" 
+										 complete="onTimeComplete(event)" 
+										 />
+
+	<!-- Player chrome -->
+	<s:HGroup id="playerChrome" width="90%" bottom="15" verticalAlign="middle" horizontalCenter="0" >
+		<crescent:CircularButton id="playButton" icon="@Embed('images/Play.png')" click="onPlayButtonClick()"/>
+		<crescent:CircularButton id="nextButton" icon="@Embed('images/Next.png')" click="onNextButtonClick()"/>
+		<supportClasses:PlayerChromeSlider id="timeSlider" width="100%"
+										   minimum="0" maximum="{videoDisplay.duration}"
+										   mouseDown="onTimeSliderMouseDown(event)" 
+										   changeStart="onTimeSliderChangeStart(event)" 
+										   changeEnd="onTimeSliderChangeEnd(event)" />
+	</s:HGroup>
+	
+	<!-- Info group -->
+	<s:HGroup id="errorGroup" horizontalCenter="0" verticalCenter="0" verticalAlign="middle" >
+		<s:BitmapImage source="@Embed('images/AlertSmall.png')"/>
+		<s:Label id="errorText" text="Playlist is empty" horizontalCenter="0" verticalCenter="0"/>
+	</s:HGroup>
+
+	
+</cavalier:UIPart>

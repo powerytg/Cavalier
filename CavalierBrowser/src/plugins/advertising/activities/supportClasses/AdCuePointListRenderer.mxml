@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:crescent="library://cavalier/frameworks/crescent"
+				width="100%" height="55"
+			  	autoDrawBackground="false" 	>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.AdCuePointEntry;
+			import frameworks.cavalier.app.utils.TimeUtil;
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				graphics.clear();
+				if(currentState == "selected"){
+					
+					graphics.beginFill(0xffffff, 0.3);
+				}
+				else{
+					graphics.beginFill(0xffffff, 0);
+				}
+				
+				graphics.drawRect(0, 0, unscaledWidth, unscaledHeight);				
+				graphics.endFill();
+
+				graphics.lineStyle(1, 0xffffff, 0.3);
+				graphics.moveTo(0, unscaledHeight);
+				graphics.lineTo(unscaledWidth, unscaledHeight);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function stateChanged(oldState:String, newState:String, recursive:Boolean):void{
+				super.stateChanged(oldState, newState, recursive);
+				invalidateDisplayList();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onDeleteButtonClick():void{
+				var evt:AdCuePointListEvent = new AdCuePointListEvent(AdCuePointListEvent.ITEM_DELETE, true);
+				evt.adCuePoint = data as AdCuePointEntry;
+				dispatchEvent(evt);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<s:transitions>
+		<s:Transition toState="selected">
+			<s:Move target="{deleteButton}"/>
+		</s:Transition>
+		
+		<s:Transition toState="normal">
+			<s:Sequence>
+				<s:Move target="{deleteButton}"/>
+				<s:SetAction target="{deleteButton}" property="visible"/>
+			</s:Sequence>
+		</s:Transition>
+	</s:transitions>
+	
+	<s:HGroup id="normalGroup" 
+			  width="100%" height="100%" 
+			  paddingLeft="10" paddingRight="10"
+			  verticalAlign="middle" gap="8">
+
+		<s:Label width="120"
+				 text="{TimeUtil.getTimeCode(data.cuePoint)}"
+				 fontSize="36" fontFamily="Walkway SemiBold"/>
+
+		<s:Label width="100%" text="{data.ad.name}"
+				 maxDisplayedLines="1"
+				 fontSize="18" color="#aef1e7"/> 
+		
+	</s:HGroup> 
+	
+	<!-- Delete button -->
+	<crescent:RedCircularButton id="deleteButton"
+						icon="@Embed('images/CloseIcon.png')"
+					 	verticalCenter="0"	
+					 	left.normal="{width}" left.selected="{width - deleteButton.width - 10}"	
+		   			    visible.normal="false" visible.selected="true"	
+					 	click="onDeleteButtonClick()"	/>
+	
+	
+</s:ItemRenderer>

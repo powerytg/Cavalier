@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<core:VideoMetricsUIPartBase xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							  xmlns:s="library://ns.adobe.com/flex/spark" 
+							  xmlns:core="plugins.videoMetrics.parts.core.*" xmlns:crescent="library://cavalier/frameworks/crescent">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.events.MetricsEvent;
+			import frameworks.cavalier.app.models.videoMetrics.VideoMetrics;
+			
+			import mx.events.FlexEvent;
+			
+			import org.osmf.utils.OSMFSettings;
+			import org.osmf.utils.Version;
+			
+			/**
+			 * @private
+			 */
+			[Embed('plugins/videoMetrics/skins/images/Supported.png')]
+			private var supportedIcon:Class;
+
+			/**
+			 * @private
+			 */
+			[Embed('plugins/videoMetrics/skins/images/NotSupported.png')]
+			private var notSupportedIcon:Class;
+
+			/**
+			 * @private
+			 */
+			override protected function onMetricsReady(evt:MetricsEvent):void{
+				super.onMetricsReady(evt);
+				
+				if(metrics)
+					metrics.addEventListener(VideoMetrics.STAGE_VIDEO_RENDER_STATE_CHANGE, stageVideoRenderStateChangeHandler, false, 0, true);
+				
+				stageVideoRenderStateChangeHandler(null);
+				
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onCreationComplete(evt:FlexEvent):void{
+				super.onCreationComplete(evt);
+				
+				osmfVersionLabel.text = Version.version;
+				if(OSMFSettings.supportsStageVideo){
+					stageVideoSupportedIcon.source = supportedIcon;
+					stageVideoSupportedLabel.setStyle("color", 0x1dd1b9);
+					stageVideoSupportedLabel.text = "StageVideo is supported";
+				}
+				else{
+					stageVideoSupportedIcon.source = notSupportedIcon;
+					stageVideoSupportedLabel.setStyle("color", 0xff387a);
+					stageVideoSupportedLabel.text = "StageVideo is not supported";
+				}
+				
+				renderStateIcon.source = notSupportedIcon;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function stageVideoRenderStateChangeHandler(event:Event):void{
+				if(metrics.stageVideoRenderState == "accelerated"){
+					renderStateIcon.source = supportedIcon;
+					renderStateLabel.setStyle("color", 0x1dd1b9);
+					renderStateLabel.text = "StageVideo in use";
+				}
+				else{
+					renderStateIcon.source = notSupportedIcon;
+					renderStateLabel.setStyle("color", 0xff387a);
+					renderStateLabel.text = "StageVideo not in use";					
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<crescent:SocketGroup width="100%" height="100%">
+		<s:VGroup verticalAlign="middle" horizontalCenter="0" verticalCenter="0" gap="15">
+			<s:HGroup verticalAlign="middle">
+				<s:BitmapImage source="@Embed('plugins/videoMetrics/skins/images/Item.png')"/>
+				<s:Label text="OSMF Version"/>
+				<s:Label id="osmfVersionLabel"/>
+			</s:HGroup>
+			<s:HGroup verticalAlign="middle">
+				<s:BitmapImage id="stageVideoSupportedIcon"/>
+				<s:Label id="stageVideoSupportedLabel"/>
+			</s:HGroup>
+			<s:HGroup verticalAlign="middle">
+				<s:BitmapImage id="renderStateIcon"/>
+				<s:Label id="renderStateLabel" text="Initializing..." />
+			</s:HGroup>
+		</s:VGroup>
+	</crescent:SocketGroup>
+	
+	
+	
+</core:VideoMetricsUIPartBase>

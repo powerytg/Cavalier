@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier" 
+				 xmlns:crescent="library://cavalier/frameworks/crescent"
+				 currentState="tileMode"
+				 creationComplete="init()" 
+				 canPopOut="true" 
+				 affectedDomain="global" >
+	<fx:Declarations>
+		<s:TileLayout id="tileLayout"
+					  paddingLeft="8" paddingRight="8" paddingTop="8" paddingBottom="8"/>
+		
+		<s:VerticalLayout id="verticalLayout" gap="0"/>
+	</fx:Declarations>
+	
+	<fx:Metadata>
+		[Event(name="clipSelectionChange", type="frameworks.cavalier.ui.parts.events.ClipSelectorEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.ClipController;
+			import frameworks.cavalier.app.events.ChromeEvent;
+			import frameworks.cavalier.app.events.SearchEvent;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.query.QueryCondition;
+			import frameworks.cavalier.app.models.stat.MonthStatistic;
+			import frameworks.cavalier.app.models.stat.SpecialStatisticEntries;
+			import frameworks.cavalier.app.models.stat.YearStatistic;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.parts.UIPartAffectedDomain;
+			import frameworks.cavalier.ui.parts.events.CalendarEvent;
+			import frameworks.cavalier.ui.parts.events.ClipSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.TagListEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.PropertyChangeEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			/**
+			 * @private
+			 */
+			[Embed('images/NoCoverArt.jpg')]
+			[Bindable]
+			private var defaultCoverArt:Class;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var allowMultipleSelection:Boolean = false;
+			
+			/**
+			 * @public
+			 */
+			public var allowBackgroundToChange:Boolean = true;
+			
+			/**
+			 * @public
+			 */
+			public var itemsPerPage:Number = 9;
+			
+			/**
+			 * @public
+			 */
+			public var condition:QueryCondition;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var dataProvider:ArrayCollection = new ArrayCollection();
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var numPages:Number = 1;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var numLoadedPages:Number;
+			  
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				// This selector can be affected by a date statistic UI part. Since those UI parts use local bus to communicate,
+				// we need to listen to the local bus for events
+				localMessageBus.addEventListener(CalendarEvent.CLIP_DATE_CHANGE, onDateChange, false, 0, true);
+				localMessageBus.addEventListener(TagListEvent.TAG_SELECTION_CHANGE, onTagChange, false, 0, true);
+				localMessageBus.addEventListener(ClipSelectorEvent.CLIP_DELETED, onClipDeleted, false, 0, true);
+				
+				addEventListener(SearchEvent.CONDITION_CHANGE, onConditionChange, false, 0, true);
+				list.scroller.viewport.addEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onScroll, false, 0, true);
+			}
+
+			/**
+			 * @public
+			 */
+			override public function destroy():void{
+				localMessageBus.removeEventListener(CalendarEvent.CLIP_DATE_CHANGE, onDateChange);
+				localMessageBus.removeEventListener(TagListEvent.TAG_SELECTION_CHANGE, onTagChange);
+				localMessageBus.removeEventListener(ClipSelectorEvent.CLIP_DELETED, onClipDeleted);
+				
+				removeEventListener(SearchEvent.CONDITION_CHANGE, onConditionChange);
+				list.scroller.viewport.removeEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onScroll);
+				
+				dataProvider.removeAll();
+				dataProvider = null;
+				
+				super.destroy();
+			}
+			
+			/**
+			 * @public
+			 */
+			override public function createClone():UIPart{
+				var clone:ClipSelector = new ClipSelector();
+				clone.itemsPerPage = itemsPerPage;
+				clone.numLoadedPages = numLoadedPages;
+				for each(var clip:Clip in dataProvider){
+					clone.dataProvider.addItem(clip);
+				}
+				
+				return clone;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function clearAll():void{
+				dataProvider.removeAll();
+				numPages = 1;
+				numLoadedPages = 0;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onDateChange(evt:CalendarEvent):void{
+				var condition:QueryCondition = new QueryCondition();
+				condition.clearPreviousRecords = true;
+
+				if(evt.selectedItem is YearStatistic){
+					var year:Number = (evt.selectedItem as YearStatistic).year;
+					condition.year = year;
+				}
+				else if(evt.selectedItem is MonthStatistic){
+					var monthStat:MonthStatistic = evt.selectedItem as MonthStatistic;
+					if(monthStat.year != SpecialStatisticEntries.ALL && monthStat.month != SpecialStatisticEntries.ALL){
+						condition.year = monthStat.year;
+						condition.month = monthStat.month;
+					}
+				}
+				
+				var event:SearchEvent = new SearchEvent(SearchEvent.CONDITION_CHANGE);
+				event.condition = condition;
+				onConditionChange(event);
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onTagChange(evt:TagListEvent):void{
+				var condition:QueryCondition = new QueryCondition();
+				condition.clearPreviousRecords = true;
+				condition.tag = evt.selectedTag;
+
+				var event:SearchEvent = new SearchEvent(SearchEvent.CONDITION_CHANGE);
+				event.condition = condition;
+				onConditionChange(event);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onConditionChange(evt:SearchEvent):void{
+				if(evt.condition.clearPreviousRecords){
+					clearAll();
+				}
+				
+				condition = evt.condition;
+				searchPage(1);					
+			}
+			
+			/**
+			 * @private
+			 */
+			private function searchPage(page:Number):void{
+				numLoadedPages += 1;
+				
+				var dispatcher:EventDispatcher;
+				if(condition.month == SpecialStatisticEntries.PENDING || (condition.tag && condition.tag.id == SpecialStatisticEntries.PENDING.toString())){
+					clearAll();
+					dataProvider.addAll(Aggregator.aggregator.pendingClips);
+					return;
+				}
+				
+				else if(condition.keywords != "" && condition.keywords != null)
+					dispatcher = ClipController.clipController.searchClip(page, itemsPerPage, condition.keywords);
+				else if(condition.tag != null && condition.tag.id != SpecialStatisticEntries.ALL.toString())
+					dispatcher = ClipController.clipController.searchClip(page, itemsPerPage, "all", condition.tag);
+				else if(isNaN(condition.month) || condition.month <= 0)
+					dispatcher = ClipController.clipController.searchClip(page, itemsPerPage, "all", null, condition.year);
+				else
+					dispatcher = ClipController.clipController.searchClip(page, itemsPerPage, "all", null, condition.year, condition.month);
+				
+				dispatcher.addEventListener(SearchEvent.CLIP_SEARCH_RESULT, onSearchResult, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onSearchResult(evt:SearchEvent):void{
+				dataProvider.addAll(evt.payload.result as ArrayCollection);
+				numPages = evt.payload.numPages;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onScroll(evt:PropertyChangeEvent):void{
+				if (evt.source == evt.target && evt.property == "verticalScrollPosition"){
+					if(list.scroller.viewport.verticalScrollPosition >= list.scroller.height)
+						if(numLoadedPages < numPages){
+							searchPage(numLoadedPages + 1);
+						}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onListModeClick():void{
+				currentState = "listMode";
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onTileModeClick():void{
+				currentState = "tileMode";
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onSearchBoxKeyDown(evt:KeyboardEvent):void{
+				if(evt.keyCode == Keyboard.ENTER){
+					if(searchBox.text != ""){
+						condition = new QueryCondition();
+						condition.clearPreviousRecords = true;
+						condition.keywords = searchBox.text;
+						
+						var event:SearchEvent = new SearchEvent(SearchEvent.CONDITION_CHANGE);
+						event.condition = condition;
+						onConditionChange(event);
+					}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onSelectionChange(evt:IndexChangeEvent):void{
+				var selectedClip:Clip = list.selectedItem as Clip;
+				var event:ClipSelectorEvent = new ClipSelectorEvent(ClipSelectorEvent.CLIP_SELECTION_CHANGE);
+				event.selectedItem = selectedClip;
+
+				if(affectedDomain == UIPartAffectedDomain.GLOBAL){
+					// This will affect global playlist selection
+					Aggregator.aggregator.selectedClip = selectedClip;
+					Aggregator.aggregator.dispatchEvent(event);
+				}
+				else{
+					localMessageBus.dispatchEvent(event);
+				}
+				
+				// The next thing to do is to update the details for the selected playlist
+				ClipController.clipController.getClip(selectedClip);
+				
+				// Notify change of background image (optional)
+				if(allowBackgroundToChange){
+					var backgroundEvent:ChromeEvent = new ChromeEvent(ChromeEvent.CHANGE_BACKGROUND, true);
+					if(selectedClip.previewUrl)
+						backgroundEvent.backgroundFace = selectedClip.previewUrl;
+					else
+						backgroundEvent.backgroundFace = defaultCoverArt;
+					
+					dispatchEvent(backgroundEvent);					
+				}
+				
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onClipDeleted(evt:ClipSelectorEvent):void{
+				dataProvider.removeItemAt(dataProvider.getItemIndex(evt.selectedItem));
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<cavalier:states>
+		<s:State name="listMode"/>
+		<s:State name="tileMode"/>
+	</cavalier:states>
+	
+	<!-- Content -->
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<crescent:TextInput id="searchBox" width="100%" prompt="(search)" keyDown="onSearchBoxKeyDown(event)"/>
+			<crescent:Button width="40" height="40" icon="@Embed('/images/AsList.png')" click="onListModeClick()"/>
+			<crescent:Button width="40" height="40" icon="@Embed('/images/AsTile.png')" click="onTileModeClick()"/>
+			<cavalier:PopOutButton visible="{canPopOut}" click="popOut()"/>
+		</s:HGroup>
+		
+		<s:Group width="100%" height="100%">
+			<!-- When no selection has been made -->
+			<s:Group width="100%" height="100%" visible="{dataProvider.length == 0}">
+				<crescent:SocketGroup width="250" horizontalCenter="0" verticalCenter="0">
+					<s:Label text="No Clip Found" fontSize="18" color="#ffffff"
+							 horizontalCenter="0" verticalCenter="0" />
+				</crescent:SocketGroup>
+			</s:Group>
+
+			<!-- Playlist content -->
+			<s:HGroup width="100%" height="100%" verticalAlign="middle"
+					  visible="{dataProvider.length != 0}">
+				<crescent:List id="list"
+							   width="100%" height="100%"
+							   dataProvider="{dataProvider}"
+							   itemRenderer.listMode="plugins.resources.parts.supportClasses.ClipAsListRenderer"
+							   itemRenderer.tileMode="plugins.resources.parts.supportClasses.ClipAsTileRenderer"
+							   layout.listMode="{verticalLayout}"
+							   layout.tileMode="{tileLayout}" 
+							   horizontalScrollPolicy="off"
+							   allowMultipleSelection="{allowMultipleSelection}" 
+							   change="onSelectionChange(event)" /> 
+				
+				<crescent:Pager id="pager" numItems="{numPages}"/>
+			</s:HGroup>
+		</s:Group>
+	</s:VGroup>
+	
+</cavalier:UIPart>

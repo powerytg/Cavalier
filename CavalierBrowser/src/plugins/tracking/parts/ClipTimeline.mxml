@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<parts:StatisticUIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:parts="frameworks.cavalier.ui.parts.*"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:crescent="library://cavalier/frameworks/crescent"
+					   creationComplete="init()"  >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:SolidColorStroke id="stroke" color="#07f0c7"/>
+		<s:LinearGradient id="fill" rotation="90">
+			<s:GradientEntry color="#07f0c7" alpha="0.3"/>
+			<s:GradientEntry color="#07f0c7" alpha="0"/>
+		</s:LinearGradient>					
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.stat.MonthStatistic;
+			import frameworks.cavalier.app.models.stat.SpecialStatisticEntries;
+			import frameworks.cavalier.app.models.stat.YearStatistic;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.app.utils.DateUtil;
+			import frameworks.cavalier.ui.parts.events.CalendarEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.renderers.CircleItemRenderer;
+			import mx.collections.ArrayCollection;
+			import mx.core.mx_internal;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var showGrid:Boolean = true;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var showPlots:Boolean = true;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var showSpecialSelectorButtons:Boolean = true;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var gridAlpha:Number = 0.2;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var statList:ArrayCollection = new ArrayCollection(); 
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var minDate:Date;
+
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var maxDate:Date;
+
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var numMaxClips:Number = -1; 
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var gridInterval:Number; 
+			/**
+			 * @private
+			 */
+			private function init():void{
+				var minYear:Number = -1;
+				var maxYear:Number = -1;
+				// Find the min and max date
+				for each(var stat:Object in Aggregator.aggregator.allTimeClipStatisticList){
+					if(stat is YearStatistic){
+						var yearStat:YearStatistic = stat as YearStatistic;
+						if(minYear == -1 || yearStat.year < minYear)
+							minYear = yearStat.year;
+
+						if(maxYear == -1 || yearStat.year > maxYear)
+							maxYear = yearStat.year;
+					}
+					else if(stat is MonthStatistic){
+						var monthStat:MonthStatistic = stat as MonthStatistic;
+						if(monthStat.month != SpecialStatisticEntries.ALL && monthStat.month != SpecialStatisticEntries.PENDING){
+							statList.addItem(monthStat);
+							
+							if(monthStat.numClips > numMaxClips)
+								numMaxClips = monthStat.numClips;
+						}
+					}
+				}
+				
+				minDate = new Date(minYear, 1, 1);
+				maxDate = new Date(maxYear, 12, 31);
+				gridInterval = numMaxClips / (statList.length + 1);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDestroy(evt:ActivityContainerEvent):void{
+				super.onDestroy(evt);
+				
+				if(statList)
+					statList.removeAll();
+				
+				statList = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function labelGenerator(labelValue:Object, previousValue:Object, axis:IAxis):String{
+				var date:Date = labelValue as Date;
+				var yearString:String = date.fullYear.toString();
+				yearString = yearString.substr(2, 2);
+				var monthString:String = DateUtil.monthNames[date.month + 1];
+				monthString = monthString.substr(0, 3);
+				
+				return yearString + " " + monthString;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onShowGridSwitchClick():void{
+				showGrid = !showGrid;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onShowPlotsSwitchClick():void{
+				showPlots = !showPlots;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onItemClick(evt:ChartItemEvent):void{
+				var event:CalendarEvent = new CalendarEvent(CalendarEvent.CLIP_DATE_CHANGE);
+				event.selectedItem = evt.hitData.item;
+				localMessageBus.dispatchEvent(event);
+				
+				// Also clone the event to notify conjoint UI parts. This cloned event doesn't go to 
+				// host activity's message bus
+				var localEvent:CalendarEvent = new CalendarEvent(CalendarEvent.CLIP_DATE_CHANGE);
+				localEvent.selectedItem = evt.hitData.item;
+				dispatchEvent(localEvent);
+
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAllEntryClick():void{
+				var allEntry:MonthStatistic = Aggregator.aggregator.allTimeClipStatisticList.getItemAt(0) as MonthStatistic;
+				var event:CalendarEvent = new CalendarEvent(CalendarEvent.CLIP_DATE_CHANGE);
+				event.selectedItem = allEntry;
+				localMessageBus.dispatchEvent(event);
+				
+				// Also clone the event to notify conjoint UI parts. This cloned event doesn't go to 
+				// host activity's message bus
+				var localEvent:CalendarEvent = new CalendarEvent(CalendarEvent.CLIP_DATE_CHANGE);
+				localEvent.selectedItem = allEntry;
+				dispatchEvent(localEvent);
+				
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onPendingEntryClick():void{
+				var pendingEntry:MonthStatistic = Aggregator.aggregator.allTimeClipStatisticList.getItemAt(1) as MonthStatistic;
+				var event:CalendarEvent = new CalendarEvent(CalendarEvent.CLIP_DATE_CHANGE);
+				event.selectedItem = pendingEntry;
+				localMessageBus.dispatchEvent(event);
+				
+				// Also clone the event to notify conjoint UI parts. This cloned event doesn't go to 
+				// host activity's message bus
+				var localEvent:CalendarEvent = new CalendarEvent(CalendarEvent.CLIP_DATE_CHANGE);
+				localEvent.selectedItem = pendingEntry;
+				dispatchEvent(localEvent);
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<s:HGroup verticalAlign="middle">
+		<s:Label text="Grid"/>
+		<crescent:Switch selected="{showGrid}" click="onShowGridSwitchClick()"/>
+		<s:Spacer width="20"/>
+		<s:Label text="Data Points"/>
+		<crescent:Switch selected="{showPlots}" click="onShowPlotsSwitchClick()"/>
+
+		<s:Spacer width="20"/>
+		<crescent:Button label="Show All Entries" click="onAllEntryClick()" visible="{showSpecialSelectorButtons}"/>
+		<crescent:Button label="Show Pending Entries" click="onPendingEntryClick()" visible="{showSpecialSelectorButtons}"/>
+	</s:HGroup>
+	<mx:AreaChart id="chart" width="100%" height="100%" top="60" 
+				  itemClick="onItemClick(event)" 
+				  selectionMode="single">
+		<mx:horizontalAxis>
+			<mx:DateTimeAxis minimum="{minDate}" maximum="{maxDate}"
+							 dataUnits="months" dataInterval="1" labelUnits="months"
+							 labelFunction="labelGenerator" 
+							 />
+		</mx:horizontalAxis>
+		
+		<mx:backgroundElements>
+			<mx:GridLines gridDirection="both" alpha="{gridAlpha}" visible="{showGrid}"/>
+		</mx:backgroundElements>
+		
+		<mx:verticalAxis>
+			<mx:LinearAxis id="vaxis" baseAtZero="true" maximum="{numMaxClips + 1}" minimum="0" interval="{gridInterval}"/>
+		</mx:verticalAxis>
+		
+		<mx:verticalAxisRenderers>
+			<mx:AxisRenderer axis="{vaxis}" showLabels="false" showLine="false" alpha="0.2" visible="{showGrid}"/>
+		</mx:verticalAxisRenderers>
+		
+		<mx:series>
+			<mx:AreaSeries dataProvider="{statList}" yField="numClips" xField="date"
+						   form="curve" areaFill="{fill}" areaStroke="{stroke}"/>
+
+			<mx:PlotSeries dataProvider="{statList}" 
+						   yField="numClips" xField="date"
+						   visible="{showPlots}" 
+						   selectable="true" 
+						   itemRenderer="plugins.tracking.parts.supportClasses.PlotRenderer" />
+			
+		</mx:series>
+	</mx:AreaChart>
+	
+</parts:StatisticUIPart>

@@ -1,0 +1,486 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   xmlns:parts="plugins.resources.parts.*"
+				   xmlns:supportClasses="plugins.annotations.activities.supportClasses.*" 
+				   title="annotations" 
+				   creationComplete="init()" 
+				   resizeComplete="onResize()" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.models.Annotation;
+			import frameworks.cavalier.app.models.AnnotationLayout;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.jobs.AnnotationJob;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.components.events.TimelineEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.effects.Parallel;
+			import mx.events.EffectEvent;
+			
+			import org.osmf.events.TimeEvent;
+			
+			import plugins.annotations.activities.events.AnnotationTimelineEvent;
+			import plugins.annotations.activities.events.AnnotationWidgetEvent;
+			import plugins.annotations.activities.supportClasses.AnnotationWidget;
+			import plugins.annotations.indicators.AnnotationTimelineIndicator;
+			import plugins.annotations.parts.DetailedAnnotationTimeline;
+			
+			import spark.effects.Animate;
+			import spark.effects.Move;
+			import spark.effects.Resize;
+			import spark.effects.animation.MotionPath;
+			import spark.effects.animation.SimpleMotionPath;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var clip:Clip;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			private var currentTime:Number = 0;
+			
+			/**
+			 * @private
+			 */
+			private var timeSliderDragging:Boolean = false;
+			
+			/**
+			 * @private
+			 */
+			private var timelineIndicator:AnnotationTimelineIndicator;
+			
+			/**
+			 * @private
+			 */
+			private var timelineView:DetailedAnnotationTimeline;
+			
+			/**
+			 * @private
+			 * 
+			 * The current on-screen widgets
+			 */
+			private var widgetsOnScreen:Dictionary = new Dictionary(true);
+			
+			/**
+			 * @private
+			 */
+			private var selectedAnnotation:Annotation;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				clip = Aggregator.aggregator.selectedClip;
+				
+				if(!timelineIndicator){
+					timelineIndicator = new AnnotationTimelineIndicator();
+					timelineIndicator.addEventListener(TimelineEvent.ITEM_SELECT, onAnnotationSelectedInTimeline, false, 0, true);
+					timelineIndicator.addEventListener(AnnotationTimelineEvent.TOGGLE_DETAILED_TIMELINE, onToggleDetailedTimeline, false, 0, true);
+				}
+				timelineIndicator.clip = clip;
+				timelineIndicator.show();
+				
+				// Time event
+				preview.videoDisplay.addEventListener(TimeEvent.CURRENT_TIME_CHANGE, onCurrentTimeChange);
+				
+				// Widget events
+				addEventListener(AnnotationWidgetEvent.ANNOTATION_CHANGED, onWidgetChanged, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			override public function destroy():void{
+				super.destroy();
+				
+				if(timelineIndicator){
+					timelineIndicator.removeEventListener(TimelineEvent.ITEM_SELECT, onAnnotationSelectedInTimeline);
+					timelineIndicator.removeEventListener(AnnotationTimelineEvent.TOGGLE_DETAILED_TIMELINE, onToggleDetailedTimeline);
+					timelineIndicator.close();
+					timelineIndicator = null;
+				}
+				
+				removeEventListener(AnnotationWidgetEvent.ANNOTATION_CHANGED, onWidgetChanged);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				if(!timelineIndicator){
+					timelineIndicator = new AnnotationTimelineIndicator();
+					timelineIndicator.addEventListener(TimelineEvent.ITEM_SELECT, onAnnotationSelectedInTimeline, false, 0, true);
+					timelineIndicator.addEventListener(AnnotationTimelineEvent.TOGGLE_DETAILED_TIMELINE, onToggleDetailedTimeline, false, 0, true);
+				}
+				
+				timelineIndicator.clip = clip;
+				timelineIndicator.show();
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				if(timelineIndicator){
+					timelineIndicator.removeEventListener(TimelineEvent.ITEM_SELECT, onAnnotationSelectedInTimeline);
+					timelineIndicator.removeEventListener(AnnotationTimelineEvent.TOGGLE_DETAILED_TIMELINE, onToggleDetailedTimeline);
+					timelineIndicator.close();
+					timelineIndicator = null;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAnnotationSelectedInTimeline(evt:TimelineEvent):void{
+				evt.stopPropagation();
+				
+				selectedAnnotation = evt.markerMetadata as Annotation;
+				
+				// Go to the time of the annotation
+				preview.videoDisplay.seek(evt.markerMetadata.time);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onCurrentTimeChange(evt:TimeEvent):void{
+				currentTime = evt.time;
+				
+				if(timelineIndicator)
+					timelineIndicator.currentTime = evt.time;
+				
+				if(timelineView)
+					timelineView.currentTime = evt.time;
+				
+				for each(var annotation:Annotation in clip.annotations){
+					if(annotation.time <= evt.time && annotation.time + annotation.duration >= evt.time){
+						// Should display this annotation
+						if(widgetsOnScreen[annotation] === undefined)
+							addAnnotationToScreen(annotation);
+					}
+					else{
+						// Should remove this annotation
+						if(widgetsOnScreen[annotation] !== undefined)
+							removeAnnotationFromScreen(annotation);
+					}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function addAnnotationToScreen(annotation:Annotation):void{
+				var widget:AnnotationWidget = new AnnotationWidget();
+				widget.addEventListener(MouseEvent.CLICK, onWidgetClick);
+				widget.annotation = annotation;
+				widgetsOnScreen[annotation] = widget;
+				
+				// Based on the layout metadata, create a respective widget
+				widget.width = annotation.layout.width;
+				widget.height = annotation.layout.height;
+				
+				if(annotation.layout.horizontalAlign == AnnotationLayout.LEFT){
+					widget.x = annotation.layout.horizontalPadding;
+				}
+				else{
+					widget.x = canvas.width - widget.width - annotation.layout.horizontalPadding;
+				}
+				
+				if(annotation.layout.verticalAlign == AnnotationLayout.TOP){
+					widget.y = annotation.layout.verticalPadding;
+				}
+				else{
+					widget.y = canvas.height - widget.height - annotation.layout.verticalPadding;
+				}
+				
+				canvas.addElement(widget);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function removeAnnotationFromScreen(annotation:Annotation):void{
+				var widget:AnnotationWidget = widgetsOnScreen[annotation] as AnnotationWidget;
+				
+				if(widget && widget.locked)
+					return;
+
+				widget.removeEventListener(MouseEvent.CLICK, onWidgetClick);
+				
+				widgetsOnScreen[annotation] = null;
+				delete widgetsOnScreen[annotation];
+
+				if(widget && canvas.containsElement(widget))
+					canvas.removeElement(widget);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onWidgetChanged(evt:AnnotationWidgetEvent):void{
+				evt.stopPropagation();
+				
+				var job:AnnotationJob = new AnnotationJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = clip;
+				
+				JobController.jobController.submitJob(job);
+				
+				// Update the annotation by coping metadata back from its widget
+				var widget:AnnotationWidget = evt.widget;
+				var layout:AnnotationLayout = widget.annotation.layout;
+				
+				if(widget.width / 2 + widget.x > canvas.width / 2){
+					layout.horizontalAlign = AnnotationLayout.RIGHT;
+					layout.horizontalPadding = canvas.width - widget.width - widget.x;
+				}
+				else{
+					layout.horizontalAlign = AnnotationLayout.LEFT;
+					layout.horizontalPadding = widget.x;
+				}
+				
+				if(widget.height / 2 + widget.y > canvas.height / 2){
+					layout.verticalAlign = AnnotationLayout.BOTTOM;
+					layout.verticalPadding = canvas.height - widget.height - widget.y;
+				}
+				else{
+					layout.verticalAlign = AnnotationLayout.TOP;
+					layout.verticalPadding = widget.y;
+				}
+				
+				layout.width = widget.width;
+				layout.height = widget.height;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onWidgetClick(evt:MouseEvent):void{
+				var widget:AnnotationWidget = evt.currentTarget as AnnotationWidget;
+				selectedAnnotation = widget.annotation;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onDeleteAnnotationClick():void{
+				if(!clip || !selectedAnnotation || !clip.annotations.contains(selectedAnnotation))
+					return;
+				
+				clip.annotations.removeItemAt(clip.annotations.getItemIndex(selectedAnnotation));
+				removeAnnotationFromScreen(selectedAnnotation);
+				selectedAnnotation = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onCreateAnnotationClick():void{
+				// Create a snapshot of the clip
+				var job:AnnotationJob = new AnnotationJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = clip;
+				
+				JobController.jobController.submitJob(job);
+				
+				// Add the new annotation to the clip's collection
+				var annotation:Annotation = new Annotation();
+				annotation.cuePoint = currentTime;
+				annotation.duration = 45;
+				annotation.layout.alignMethod = AnnotationLayout.HORIZONTAL_ALIGN;
+				annotation.layout.horizontalAlign = AnnotationLayout.LEFT;
+				annotation.layout.verticalAlign = AnnotationLayout.TOP;
+				annotation.layout.horizontalPadding = 20;
+				annotation.layout.verticalPadding = 20;
+				annotation.layout.width = 240;
+				annotation.layout.height = 96;
+				
+				clip.annotations.addItem(annotation);
+				addAnnotationToScreen(annotation);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onCommitClick():void{
+				JobController.jobController.commit();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onToggleDetailedTimeline(evt:AnnotationTimelineEvent = null):void{
+				preview.pause();
+				
+				if(!timelineView){
+					canvas.visible = false;
+
+					preview.showControls = false;
+					showDock();
+					
+					timelineView = new DetailedAnnotationTimeline();
+					timelineView.percentWidth = 100;
+					timelineView.percentHeight = 100;
+					timelineGroup.addElement(timelineView);
+					timelineGroup.visible = true;
+					timelineGroup.addEventListener(TimelineEvent.ITEM_SELECT, onAnnotationSelectedInTimeline, false, 0, true);
+				}
+				else{
+					timelineGroup.removeEventListener(TimelineEvent.ITEM_SELECT, onAnnotationSelectedInTimeline);
+					timelineGroup.visible = false;					
+					timelineGroup.removeAllElements();
+					timelineView = null;
+					
+					hideDock();
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function showDock():void{
+				glow.visible = true;
+				
+				// Panel animation
+				dockGroup.visible = true;
+				var panelMp:SimpleMotionPath = new SimpleMotionPath("bottom");
+				panelMp.valueTo = 0;
+				var panelAnimate:Animate = new Animate(dockGroup);
+				panelAnimate.motionPaths = Vector.<MotionPath>([panelMp]);
+				panelAnimate.play();
+				
+				// Preview animation
+				var parallel:Parallel = new Parallel(preview);
+				var resize:Resize = new Resize();
+				resize.widthTo = 194;
+				resize.heightTo = 109;
+				
+				var pt:Point = getPreviewPosition();
+				var move:Move = new Move();
+				move.xTo = pt.x;
+				move.yTo = pt.y;
+				
+				parallel.addChild(resize);
+				parallel.addChild(move);
+				parallel.play();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function getPreviewPosition():Point{
+				return new Point(dock.x + 66, contentGroup.height - 109 - 30);
+			}
+			
+			/**
+			 * @private
+			 */
+			private var hideDockAnimation:Parallel;
+			
+			/**
+			 * @private
+			 */
+			private function hideDock():void{
+				glow.visible = false;
+				
+				// Panel animation
+				var panelMp:SimpleMotionPath = new SimpleMotionPath("bottom");
+				panelMp.valueTo = -dockGroup.height;
+				var panelAnimate:Animate = new Animate(dockGroup);
+				panelAnimate.motionPaths = Vector.<MotionPath>([panelMp]);
+				panelAnimate.play();
+				
+				// Preview animation
+				hideDockAnimation = new Parallel(preview);
+				var resize:Resize = new Resize();
+				resize.widthTo = contentGroup.width;
+				resize.heightTo = contentGroup.height;
+				
+				var move:Move = new Move();
+				move.xTo = 0;
+				move.yTo = 0;
+				
+				hideDockAnimation.addChild(resize);
+				hideDockAnimation.addChild(move);
+				hideDockAnimation.addEventListener(EffectEvent.EFFECT_END, onHidePreviewPanelAnimationEnd);
+				hideDockAnimation.play();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onHidePreviewPanelAnimationEnd(evt:EffectEvent):void{
+				hideDockAnimation.removeEventListener(EffectEvent.EFFECT_END, onHidePreviewPanelAnimationEnd);
+				hideDockAnimation = null;
+				
+				dockGroup.visible = false;
+				preview.showControls = true;
+				preview.play();
+				
+				canvas.visible = true;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onResize():void{
+				// Only need to re-calculate the position when in dock mode
+				if(timelineView){
+					invalidateSize();
+					validateSize();
+					
+					var pt:Point = getPreviewPosition();
+					preview.x = pt.x;
+					preview.y = pt.y;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<!-- Glow -->
+	<s:BitmapImage id="glow" source="@Embed('supportClasses/images/Glow.png')" horizontalCenter="0" verticalCenter="0" visible="false"/>
+	
+	<!-- Video surface -->
+	<s:Group id="layoutGroup" width="100%" height="100%" clipAndEnableScrolling="true">
+		<s:Group id="dockGroup" width="100%" height="201" bottom="{-dockGroup.height}" visible="false">
+			<supportClasses:AnnotationDock id="dock" horizontalCenter="0" 
+										   video="{preview}" currentTime="{currentTime}" duration="{clip.duration}" title="{clip.name}"/>
+		</s:Group>
+
+		<parts:ClipPreview id="preview" x="0" y="0" width="100%" height="100%" clip="{clip}"/>
+		
+		<!-- Detailed timeline view placeholder -->
+		<s:Group id="timelineGroup" width="100%" top="0" bottom="{dockGroup.height}" visible="false"/>
+		
+		<!-- Annotation canvas -->
+		<s:Group id="canvas" width="100%" height="100%" />
+	</s:Group>
+	
+	
+	<crescent:actions>
+		<crescent:Button label="Commit Changes" click="onCommitClick()"/>
+		<s:Spacer width="25"/>
+		<crescent:Button label="Create Annotation" click="onCreateAnnotationClick()"/>
+		<crescent:RedButton label="Delete Selected" click="onDeleteAnnotationClick()"/>
+	</crescent:actions>
+	
+</crescent:Activity>

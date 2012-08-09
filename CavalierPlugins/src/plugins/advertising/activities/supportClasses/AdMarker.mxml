@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 height="60"
+		 implements="frameworks.cavalier.ui.components.supportClasses.ITimelineMarker" >
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.AdCuePointEntry;
+			import frameworks.cavalier.app.utils.ColorUtils;
+			import frameworks.cavalier.ui.components.supportClasses.ITimelineMarkerMetadata;
+			
+			import mx.core.UIComponent;
+			
+			/**
+			 * @public
+			 */
+			public var faceColor:Number = 0x07f0c7;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var adCuePoint:AdCuePointEntry;
+			
+			/**
+			 * @public
+			 */
+			public function get data():ITimelineMarkerMetadata
+			{
+				return adCuePoint;
+			}
+			
+			/**
+			 * @public
+			 */
+			public function set data(value:ITimelineMarkerMetadata):void
+			{
+				adCuePoint = value as AdCuePointEntry;
+				faceColor = adCuePoint.color;
+			}
+			
+			/**
+			 * @public
+			 */
+			public function get resizer():UIComponent{
+				return null;
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				graphics.clear();
+				graphics.lineStyle(1, faceColor);
+				graphics.beginFill(faceColor, 0.3);
+				graphics.drawRect(0, 0, unscaledWidth, unscaledHeight);
+				graphics.beginFill(faceColor, 0.75);
+				graphics.drawRect(0, 0, unscaledWidth, 10);
+				graphics.endFill();
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!-- Label -->
+	<s:Label width="100%" textAlign="right"
+			 bottom="3" paddingLeft="5" paddingRight="5"
+			 maxDisplayedLines="1" 
+			 fontSize="24"
+			 color="#ffffff" 
+			 text="{adCuePoint.ad.name}"/> 
+</s:Group>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+			 	xmlns:crescent="library://cavalier/frameworks/crescent"	
+				autoDrawBackground="false" 
+				height="66">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.events.ItemClickEvent;
+			
+			/**
+			 * @private
+			 */
+			[Embed(source='../images/Tag.png', scaleGridTop=20, scaleGridBottom=40, scaleGridLeft=60, scaleGridRight=70)]
+			private var tagFace:Class;
+
+			/**
+			 * @private
+			 */
+			[Embed(source='../images/TagSelected.png', scaleGridTop=20, scaleGridBottom=40, scaleGridLeft=60, scaleGridRight=70)]
+			private var tagSelectedFace:Class;
+			
+			/**
+			 * @private
+			 */
+			[Embed(source='../images/HashTag.png', scaleGridTop=20, scaleGridBottom=40, scaleGridLeft=60, scaleGridRight=70)]
+			private var hashtagFace:Class;
+			
+			/**
+			 * @private
+			 */
+			[Embed(source='../images/HashTagSelected.png', scaleGridTop=20, scaleGridBottom=40, scaleGridLeft=60, scaleGridRight=70)]
+			private var hashtagSelectedFace:Class;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var upFace:Class;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var selectedFace:Class;
+			
+			/**
+			 * @public
+			 */
+			override public function set data(value:Object):void{
+				super.data = value;
+				
+				if(value is String){
+					upFace = hashtagFace;
+					selectedFace = hashtagSelectedFace;
+				}
+				else{
+					upFace = tagFace;
+					selectedFace = tagSelectedFace;					
+				}
+			}
+						
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<s:transitions>
+		<s:Transition toState="selected">
+			<s:Sequence target="{removeButton}">
+				<s:Resize/>
+				<s:Fade/>
+			</s:Sequence>
+		</s:Transition>
+
+		<s:Transition toState="normal">
+			<s:Resize target="{removeButton}"/>
+		</s:Transition>
+
+	</s:transitions>
+	
+	<s:BitmapImage left="0" right="0" top="0" bottom="0"
+				   source="{upFace}" visible.selected="false"/>
+
+	<s:BitmapImage left="0" right="0" top="0" bottom="0"
+				   source="{selectedFace}" visible.normal="false"/>
+
+	<s:HGroup paddingLeft="65" paddingRight="20" 
+			  verticalCenter="0" verticalAlign="middle" horizontalAlign="center">
+		<s:Label text="{data is String ? data : data.name}" />
+		
+		<crescent:RoundedOrangeButton id="removeButton" label="Remove"
+									  alpha.normal="0" width.normal="0" 
+									  verticalCenter="0" />
+		
+	</s:HGroup>
+
+	<!--
+	<s:Label paddingLeft="65" paddingRight="30" text="{data is String ? data : data.name}" 
+			 verticalCenter="0" />
+	
+	<crescent:OrangeCircularButton width="45" height="45" left="12" verticalCenter="0"
+								   visible.normal="false" />
+	-->
+</s:ItemRenderer>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:crescent="library://cavalier/frameworks/crescent" 
+				 width="550" height="330">
+	
+	<fx:Script>
+		<![CDATA[
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var text:String;
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Label width="100%" color="#ffffff" text="{text}" textAlign="center" verticalCenter="0"/>
+		
+	
+	<crescent:Button label="Confirm" horizontalCenter="0" bottom="10" click="close()"/>
+	
+</crescent:Window>

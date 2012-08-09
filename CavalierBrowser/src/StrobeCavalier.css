@@ -1,0 +1,16 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+
+global{
+	interactionMode: "touch";
+}
+
+.sidePanelAccordionTitleBar{
+	skinClass: ClassReference("ui.sidePanel.supportClasses.SidePanelAccordionTitleBarSkin");
+}
+
+.uiPartCatagoryGroup{
+	fontSize: 24;
+	color: #696969;
+	fontFamily: 'Walkway';
+}

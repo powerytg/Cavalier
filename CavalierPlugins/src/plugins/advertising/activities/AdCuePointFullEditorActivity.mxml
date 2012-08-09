@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				   title="ad cuepoints" 
+				   creationComplete="init()"  >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import plugins.advertising.indicators.AdTimelineIndicator;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var clip:Clip;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				clip = Aggregator.aggregator.selectedClip;
+			}
+			
+			/**
+			 * @private
+			 */
+			override public function destroy():void{
+				super.destroy();
+				clip = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onScrollerMouseDown(evt:MouseEvent):void{
+				evt.stopPropagation();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onZoomInClick():void{
+				timeline.zoomIn();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onZoomOutClick():void{
+				timeline.zoomOut();
+			}
+		]]>
+	</fx:Script>
+
+	<s:Scroller width="100%" height="100%" mouseDown="onScrollerMouseDown(event)">
+		<cavalier:Timeline id="timeline"
+						   height="100%" 
+						   clustered="false"
+						   gapPerSecond="6" 
+						   showThumb="false" 
+						   totalTime="{clip.duration}" 
+						   dataProvider="{clip.ads}" 
+						   markerClass="plugins.advertising.activities.supportClasses.ExpandedAdMarker"/>
+	</s:Scroller>
+	
+	<crescent:actions>
+		<crescent:Button label="Zoom In" click="onZoomInClick()"/>
+		<crescent:Button label="Zoom Out" click="onZoomOutClick()"/>
+	</crescent:actions>
+</crescent:Activity>

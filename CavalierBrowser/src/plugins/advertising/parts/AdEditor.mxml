@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				 xmlns:crescent="library://cavalier/frameworks/crescent"
+				 xmlns:layouts="frameworks.cavalier.ui.layouts.*"
+				 canPopOut="true" 
+				 resize="onResize()" 
+				 creationComplete="init()" >
+	<fx:Declarations>
+		<s:HorizontalLayout id="hLayout" gap="30"/>
+		<s:VerticalLayout id="vLayout" gap="30"/>
+		<s:TileLayout id="clipTileLayout"
+					  paddingLeft="8" paddingRight="8" paddingTop="8" paddingBottom="8" />
+		
+		<s:VerticalLayout id="clipListLayout"/>
+		
+		<s:RadioButtonGroup id="vastTypeGroup" selectedValue="{ad.vastType}" change="onPropertyChange()"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.models.Ad;
+			import frameworks.cavalier.app.models.jobs.AdJob;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.activities.managers.ActivityManager;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.binding.utils.ChangeWatcher;
+			
+			import plugins.advertising.activities.AssignTagsToAdActivity;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var ad:Ad;
+			
+			/**
+			 * @private
+			 */
+			private var adWatcher:ChangeWatcher;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				if(!ad){
+					if(!adWatcher)
+						adWatcher = BindingUtils.bindProperty(this, "ad", Aggregator.aggregator, "selectedAd", true);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				if(!adWatcher)
+					adWatcher = BindingUtils.bindProperty(this, "ad", Aggregator.aggregator, "selectedAd", true);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				if(adWatcher){
+					adWatcher.unwatch();
+					adWatcher = null;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override public function destroy():void{
+				super.destroy();
+				
+				if(adWatcher){
+					adWatcher.unwatch();
+					adWatcher = null;
+				}
+				
+				ad = null;
+			}
+			
+			
+			/**
+			 * @public
+			 */
+			override public function createClone():UIPart{
+				var clone:AdEditor = new AdEditor();
+				return clone;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onResize():void{
+				if(width > height){
+					layoutGroup.layout = hLayout;
+					optionGroup.percentWidth = 35;
+					propertyGroup.percentWidth = 65;
+				}
+				else{
+					layoutGroup.layout = vLayout;
+					optionGroup.percentWidth = 100;
+					propertyGroup.percentWidth = 100;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onDeleteClick():void{
+				var job:AdJob = new AdJob();
+				job.action = CRUDAction.DELETE;
+				job.payload = ad;
+				JobController.jobController.submitJob(job);
+				ad = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onCommitButtonClick():void{
+				JobController.jobController.commit();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onPropertyChange():void{
+				if(!ad)
+					return;
+				
+				var job:AdJob = new AdJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = ad;
+				JobController.jobController.submitJob(job);
+				
+				// Update properties on current clip
+				updateProperties();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function updateProperties():void{
+				if(!ad)
+					return;
+				
+				ad.name = nameInput.text;
+				ad.url = urlInput.text;
+				ad.vastType = vastTypeGroup.selectedValue.toString();
+				ad.longAd = longAdSwitch.selected;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAssignTagsButtonClick():void{
+				var assignTagActivity:AssignTagsToAdActivity = new AssignTagsToAdActivity();
+				assignTagActivity.ad = ad;
+				ActivityManager.activityManager.addActivityToFront(assignTagActivity);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onRemoveAllTagsButtonClick():void{
+				var job:AdJob = new AdJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = ad;
+				JobController.jobController.submitJob(job);
+				
+				ad.tags.removeAll();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<cavalier:states>
+		<s:State name="noData"/>
+		<s:State name="normal"/>
+	</cavalier:states>
+	
+	<!-- Content -->
+	<s:Scroller width="{width - 60}" height="100%" horizontalScrollPolicy="off">
+		<s:Group id="layoutGroup" 
+				 width="100%" 
+				 layout="{hLayout}"
+				 visible="{ad!= null}" >
+			<s:VGroup id="optionGroup" width="100%" horizontalAlign="right">
+				<!-- Options -->
+				<crescent:Section title="Resource" width="100%">
+					<s:HGroup width="100%" paddingTop="15" paddingBottom="15"
+							  verticalAlign="middle" >
+						<s:Label text="Ad ID" width="100%"/>
+						<crescent:SocketGroup width="200" height="50">
+							<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="15">
+								<s:Label fontSize="14" color="#cacaca" text="{ad.id}" width="40%" textAlign="center"/>
+								<crescent:RoundedOrangeButton label="Delete" width="100%" height="100%" click="onDeleteClick()"/>
+							</s:HGroup>			
+						</crescent:SocketGroup>									
+					</s:HGroup>
+				</crescent:Section>
+				
+				<crescent:Section title="Options" width="100%">
+					<s:VGroup width="100%" paddingTop="15" paddingBottom="15">
+						<s:Spacer height="15"/>
+						<crescent:Button label="Assign Tags" width="100%" click="onAssignTagsButtonClick()"/>
+						
+						<s:Spacer height="15"/>
+						<crescent:Button label="Commit Changes" width="100%" click="onCommitButtonClick()"/>
+						<crescent:RedButton label="Delete This Ad" width="100%" click="onDeleteClick()"/>
+					</s:VGroup>
+				</crescent:Section>
+			</s:VGroup>
+			
+			<!-- Clip properties -->
+			<!-- Essential -->
+			<s:VGroup id="propertyGroup" width="100%" gap="20">
+				<crescent:Section title="Essentials" width="100%">
+					<s:VGroup width="100%" paddingTop="25">
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="Name" width="40%"/>
+							<crescent:TextInput id="nameInput" width="100%" text="{ad.name}" change="onPropertyChange()"/>								
+						</s:HGroup>				
+						
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="URI" width="40%"/>
+							<crescent:TextInput id="urlInput" width="100%" text="{ad.url}" change="onPropertyChange()"/>								
+						</s:HGroup>				
+						
+						<s:HGroup width="100%" gap="15" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="VAST2 Type" width="40%"/>
+							<s:HGroup width="100%">
+								<crescent:RadioButton group="{vastTypeGroup}" label="Linear" value="linear"/>
+								<crescent:RadioButton group="{vastTypeGroup}" label="Non Linear" value="non-linear"/>								
+							</s:HGroup>
+						</s:HGroup>
+						
+						<s:HGroup verticalAlign="middle" width="100%">
+							<s:Label fontSize="14" color="#cacaca" text="Use as Long Ad?" width="40%"/>
+							<crescent:Switch id="longAdSwitch" selected="{ad.longAd}" click="onPropertyChange()"/>
+						</s:HGroup>
+					</s:VGroup>
+				</crescent:Section>		
+				
+				<!-- Tags -->
+				<crescent:Section title="Tags" width="100%">
+					<crescent:actions>
+						<crescent:Button label="Assign Tags" click="onAssignTagsButtonClick()"/>
+						<crescent:RedButton label="Remove All Tags" click="onRemoveAllTagsButtonClick()"/>
+					</crescent:actions>
+					<s:VGroup width="100%" paddingTop="25">
+						<crescent:List width="100%" dataProvider="{ad.tags}"
+									   itemRenderer="plugins.advertising.activities.supportClasses.TagRenderer" 
+									   verticalScrollPolicy="off">
+							<crescent:layout>
+								<layouts:FlowLayout/>
+							</crescent:layout>
+						</crescent:List>
+						
+					</s:VGroup>
+				</crescent:Section>
+				
+			</s:VGroup>
+		</s:Group>		
+	</s:Scroller>
+	
+	<!-- When no selection has been made -->
+	<s:Group width="100%" height="100%" visible="{ad == null}">
+		<crescent:SocketGroup width="250" horizontalCenter="0" verticalCenter="0">
+			<s:Label text="No Ad Selected" fontSize="18" color="#ffffff"
+					 horizontalCenter="0" verticalCenter="0" />
+		</crescent:SocketGroup>
+	</s:Group>
+	
+	<cavalier:PopOutButton right="0" top="-5" visible="{canPopOut}" click="popOut()"/>
+</cavalier:UIPart>

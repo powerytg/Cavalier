@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:crescent="library://cavalier/frameworks/crescent" 
+		 height="55" 
+		 implements="frameworks.cavalier.messaging.IMessageRenderer" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.messaging.models.MessageLevel;
+			import frameworks.cavalier.messaging.models.MessageStatus;
+			import frameworks.cavalier.messaging.models.TextMessage;
+			
+			/**
+			 * @public
+			 */
+			private var _data:Object;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public function get data():Object
+			{
+				return _data;
+			}
+			
+			/**
+			 * @public
+			 */
+			public function set data(value:Object):void
+			{
+				_data = value;
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				graphics.clear();
+				if(_data){
+					var level:String = (_data as TextMessage).level;
+					if(level != MessageLevel.NORMAL){
+						var fillColor:Number;
+						
+						if(level == MessageLevel.ALERT || level == MessageLevel.FAILED)
+							fillColor = 0x691100;
+						else if(level == MessageLevel.SUCCESSFUL)
+							fillColor = 0x8dc63f;
+						
+						graphics.beginFill(fillColor, 0.3);
+						graphics.drawRect(0, 0, unscaledWidth, unscaledHeight);
+						graphics.endFill();
+					}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onRemoveButtonClick():void{
+				(_data as TextMessage).status = MessageStatus.INACTIVE;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup left="20" right="5" top="0" bottom="0" verticalAlign="middle">
+		<s:Label width="100%" fontSize="14" color="#ffffff" text="{data.content}"/>
+		<crescent:OrangeCircularButton icon="@Embed('images/Remove.png')" 
+									   click="onRemoveButtonClick()" 
+									   visible="{(data as TextMessage).status == MessageStatus.ACTIVE}" />
+	</s:HGroup>
+	
+	<s:BitmapImage left="0" right="0" bottom="0"
+				   source="@Embed('images/Splitter.png')"
+				   fillMode="scale" /> 
+</s:Group>

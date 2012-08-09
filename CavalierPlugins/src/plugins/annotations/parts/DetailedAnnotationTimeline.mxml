@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:mx="library://ns.adobe.com/flex/mx" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				 creationComplete="init()" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.models.Annotation;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.jobs.AnnotationJob;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.components.events.TimelineEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.binding.utils.ChangeWatcher;
+			
+			import plugins.annotations.activities.events.ExpandedAnnotationMarkerEvent;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var clip:Clip;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var currentTime:Number;
+			
+			/**
+			 * @private
+			 */
+			private var useGlobalClip:Boolean;
+			
+			/**
+			 * @private
+			 */
+			private var clipWatcher:ChangeWatcher;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				if(!clip){
+					useGlobalClip = true;
+					if(!clipWatcher)
+						clipWatcher = BindingUtils.bindProperty(this, "clip", Aggregator.aggregator, "selectedClip", true);
+				}
+				
+				addEventListener(ExpandedAnnotationMarkerEvent.ANNOTATION_CONTENT_CHANGE, onAnnotationContentChange, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				if(useGlobalClip && !clipWatcher)
+					clipWatcher = BindingUtils.bindProperty(this, "clip", Aggregator.aggregator, "selectedClip", true);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				if(useGlobalClip && clipWatcher){
+					clipWatcher.unwatch();
+					clipWatcher = null;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override public function destroy():void{
+				super.destroy();
+				
+				if(useGlobalClip && clipWatcher){
+					clipWatcher.unwatch();
+					clipWatcher = null;
+				}
+				
+				clip = null;
+				removeEventListener(ExpandedAnnotationMarkerEvent.ANNOTATION_CONTENT_CHANGE, onAnnotationContentChange);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onScrollerMouseDown(evt:MouseEvent):void{
+				evt.stopPropagation();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAnnotationContentChange(evt:ExpandedAnnotationMarkerEvent):void{
+				evt.stopPropagation();
+				var job:AnnotationJob = new AnnotationJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = clip;
+				
+				JobController.jobController.submitJob(job);
+				
+				evt.annotation.content = evt.newContent;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onItemMove(evt:TimelineEvent):void{
+				var job:AnnotationJob = new AnnotationJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = clip;
+				
+				JobController.jobController.submitJob(job);
+				
+				var annotation:Annotation = evt.markerMetadata as Annotation;
+				annotation.cuePoint = evt.time;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onItemResize(evt:TimelineEvent):void{
+				var job:AnnotationJob = new AnnotationJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = clip;
+				
+				JobController.jobController.submitJob(job);
+				
+				var annotation:Annotation = evt.markerMetadata as Annotation;
+				annotation.duration = evt.time;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Scroller width="100%" height="100%" mouseDown="onScrollerMouseDown(event)">
+		<cavalier:Timeline id="timeline"
+						   height="100%" 
+						   clustered="false"
+						   gapPerSecond="6" 
+						   totalTime="{clip.duration}" 
+						   currentTime="{currentTime}" 
+						   dataProvider="{clip.annotations}" 
+						   markerClass="plugins.annotations.activities.supportClasses.ExpandedAnnotationMarker"
+						   itemMove="onItemMove(event)" 
+						   itemResize="onItemResize(event)"/>
+	</s:Scroller>
+	
+</cavalier:UIPart>

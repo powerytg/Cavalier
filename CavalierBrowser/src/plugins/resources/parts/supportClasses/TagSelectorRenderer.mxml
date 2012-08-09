@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+			 	xmlns:crescent="library://cavalier/frameworks/crescent"	
+				height="55" 
+			 	autoDrawBackground="false"	>
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var showNumClipsBadge:Boolean = false;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var showNumAdsBadge:Boolean = false;
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<crescent:DefaultItemRendererBackground width="100%" height="100%"
+											alpha.normal="0" alpha.selected="1"/>
+	
+	<s:HGroup verticalAlign="middle"
+			  width="100%" height="100%"
+			  paddingLeft="15" >
+		<s:BitmapImage source="@Embed('plugins/resources/parts/images/Item.png')"/>
+		<s:Label color="#cccccc" fontSize="18" text="{data.name}"/>
+		
+		<!-- Badges -->
+		<crescent:NumericLabel text="{data.numClips}" includeInLayout="{showNumClipsBadge}" visible="{showNumClipsBadge}"/>
+		<crescent:NumericLabel text="{data.numAds}" faceColor="#b87fff" includeInLayout="{showNumAdsBadge}" visible="{showNumAdsBadge}"/>
+	</s:HGroup>
+
+</s:ItemRenderer>

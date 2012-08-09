@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier" 
+				 xmlns:parts="plugins.resources.parts.*"
+				 xmlns:crescent="library://cavalier/frameworks/crescent" 
+				 creationComplete="init()" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import spark.effects.Animate;
+			import spark.effects.animation.MotionPath;
+			import spark.effects.animation.SimpleMotionPath;
+			
+			/**
+			 * @private
+			 */
+			protected function init():void{
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onCalendarButtonClick():void{
+				if(calendarList.x == 0)
+					return;
+				
+				var mp:SimpleMotionPath = new SimpleMotionPath("x");
+				mp.valueBy = queryGroup.width;
+				
+				var animate:Animate = new Animate();
+				animate.targets = [calendarList, tagList];
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				
+				animate.play();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTagButtonClick():void{
+				if(tagList.x == 0)
+					return;
+				
+				var mp:SimpleMotionPath = new SimpleMotionPath("x");
+				mp.valueBy = -queryGroup.width;
+				
+				var animate:Animate = new Animate();
+				animate.targets = [calendarList, tagList];
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				
+				animate.play();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onQueryTermChange():void{
+				var mp:SimpleMotionPath = new SimpleMotionPath("x");
+				mp.valueBy = -width;
+				
+				var animate:Animate = new Animate();
+				animate.targets = [calendarGroup, selectorGroup];
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				
+				animate.play();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onBackButtonClick():void{
+				var mp:SimpleMotionPath = new SimpleMotionPath("x");
+				mp.valueBy = width;
+				
+				var animate:Animate = new Animate();
+				animate.targets = [calendarGroup, selectorGroup];
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				
+				animate.play();
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Group width="100%" height="100%" clipAndEnableScrolling="true">
+		<s:VGroup id="calendarGroup" width="100%" height="100%" gap="25">
+			<!-- Query items -->
+			<crescent:Section width="100%" height="150" title="Filters" >
+				<s:VGroup paddingTop="25">
+					<crescent:RadioButton label="Calendar" groupName="filterGroup" selected="true" click="onCalendarButtonClick()"/>
+					<crescent:RadioButton label="Tag" groupName="filterGroup" click="onTagButtonClick()"/>
+				</s:VGroup>
+			</crescent:Section>
+			
+			<crescent:Section width="100%" height="100%" title="Selectors">
+				<s:Group id="queryGroup" width="100%" height="100%" clipAndEnableScrolling="true">
+					<parts:ClipCalendar id="calendarList" width="100%" height="100%" clipDateChange="onQueryTermChange()"/>
+					<parts:TagListWithClipBadge id="tagList" width="100%" height="100%" x="{queryGroup.width}" tagSelectionChange="onQueryTermChange()"/>
+				</s:Group>												
+			</crescent:Section>
+		</s:VGroup>
+		
+		<!-- Clip list -->
+		<s:VGroup id="selectorGroup" width="100%" height="100%" gap="15" x="{width}">
+			<crescent:Button id="returnButton" label="Back" width="100%" click="onBackButtonClick()"/>
+			<parts:ClipSelector id="selector" width="100%" height="100%"/>
+		</s:VGroup>
+		
+	</s:Group>
+	
+	
+</cavalier:UIPart>

@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier" 
+				 xmlns:crescent="library://cavalier/frameworks/crescent"
+				 creationComplete="init()" 
+				 canPopOut="true" 
+				 affectedDomain="global" >
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<fx:Metadata>
+		[Event(name="adSelectionChange", type="frameworks.cavalier.ui.parts.events.AdSelectorEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.AdController;
+			import frameworks.cavalier.app.events.SearchEvent;
+			import frameworks.cavalier.app.models.Ad;
+			import frameworks.cavalier.app.models.query.QueryCondition;
+			import frameworks.cavalier.app.models.stat.SpecialStatisticEntries;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.parts.UIPartAffectedDomain;
+			import frameworks.cavalier.ui.parts.events.AdSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.TagListEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.PropertyChangeEvent;
+			
+			import spark.events.IndexChangeEvent;
+						
+			/**
+			 * @public
+			 */
+			public var itemsPerPage:Number = 9;
+			
+			/**
+			 * @public
+			 */
+			public var condition:QueryCondition;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var dataProvider:ArrayCollection = new ArrayCollection();
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var numPages:Number = 1;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var numLoadedPages:Number;
+			  
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var showSearchBox:Boolean = true;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var showPager:Boolean = true;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				// This selector can be affected by a date statistic UI part. Since those UI parts use local bus to communicate,
+				// we need to listen to the local bus for events
+				localMessageBus.addEventListener(TagListEvent.TAG_SELECTION_CHANGE, onTagChange, false, 0, true);
+				
+				addEventListener(SearchEvent.CONDITION_CHANGE, onConditionChange, false, 0, true);
+				list.scroller.viewport.addEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onScroll, false, 0, true);
+			}
+
+			/**
+			 * @public
+			 */
+			override public function destroy():void{
+				localMessageBus.removeEventListener(TagListEvent.TAG_SELECTION_CHANGE, onTagChange);
+				
+				removeEventListener(SearchEvent.CONDITION_CHANGE, onConditionChange);
+				list.scroller.viewport.removeEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onScroll);
+				
+				dataProvider.removeAll();
+				dataProvider = null;
+				
+				super.destroy();
+			}
+			
+			/**
+			 * @public
+			 */
+			override public function createClone():UIPart{
+				var clone:AdSelector = new AdSelector();
+				clone.itemsPerPage = itemsPerPage;
+				clone.numLoadedPages = numLoadedPages;
+				for each(var ad:Ad in dataProvider){
+					clone.dataProvider.addItem(ad);
+				}
+				
+				return clone;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function clearAll():void{
+				dataProvider.removeAll();
+				numPages = 1;
+				numLoadedPages = 0;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onTagChange(evt:TagListEvent):void{
+				var condition:QueryCondition = new QueryCondition();
+				condition.clearPreviousRecords = true;
+				condition.tag = evt.selectedTag;
+
+				var event:SearchEvent = new SearchEvent(SearchEvent.CONDITION_CHANGE);
+				event.condition = condition;
+				onConditionChange(event);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onConditionChange(evt:SearchEvent):void{
+				if(evt.condition.clearPreviousRecords){
+					clearAll();
+				}
+				
+				condition = evt.condition;
+				searchPage(1);					
+			}
+			
+			/**
+			 * @private
+			 */
+			private function searchPage(page:Number):void{
+				numLoadedPages += 1;
+				
+				var dispatcher:EventDispatcher;
+				if(condition.tag && condition.tag.id == SpecialStatisticEntries.PENDING.toString()){
+					clearAll();
+					dataProvider.addAll(Aggregator.aggregator.pendingAds);
+					return;
+				}
+				
+				else if(condition.keywords != "" && condition.keywords != null)
+					dispatcher = AdController.adController.searchAd(page, itemsPerPage, condition.keywords);
+				else if(condition.tag != null && condition.tag.id != SpecialStatisticEntries.ALL.toString())
+					dispatcher = AdController.adController.searchAd(page, itemsPerPage, "all", condition.tag);
+				else
+					dispatcher = AdController.adController.searchAd(page, itemsPerPage, "all", null);
+				
+				dispatcher.addEventListener(SearchEvent.AD_SEARCH_RESULT, onSearchResult, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onSearchResult(evt:SearchEvent):void{
+				dataProvider.addAll(evt.payload.result as ArrayCollection);
+				numPages = evt.payload.numPages;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onScroll(evt:PropertyChangeEvent):void{
+				if (evt.source == evt.target && evt.property == "verticalScrollPosition"){
+					if(list.scroller.viewport.verticalScrollPosition >= list.scroller.height)
+						if(numLoadedPages < numPages){
+							searchPage(numLoadedPages + 1);
+						}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onSearchBoxKeyDown(evt:KeyboardEvent):void{
+				if(evt.keyCode == Keyboard.ENTER){
+					if(searchBox.text != ""){
+						condition = new QueryCondition();
+						condition.clearPreviousRecords = true;
+						condition.keywords = searchBox.text;
+						
+						var event:SearchEvent = new SearchEvent(SearchEvent.CONDITION_CHANGE);
+						event.condition = condition;
+						onConditionChange(event);
+					}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onSelectionChange(evt:IndexChangeEvent):void{
+				var selectedAd:Ad = list.selectedItem as Ad;
+				var event:AdSelectorEvent = new AdSelectorEvent(AdSelectorEvent.AD_SELECTION_CHANGE);
+				event.selectedItem = selectedAd;
+
+				if(affectedDomain == UIPartAffectedDomain.GLOBAL){
+					// This will affect global playlist selection
+					Aggregator.aggregator.selectedAd = selectedAd;
+					Aggregator.aggregator.dispatchEvent(event);
+				}
+				else{
+					localMessageBus.dispatchEvent(event);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<!-- Content -->
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%" verticalAlign="middle" visible="{showSearchBox}">
+			<crescent:TextInput id="searchBox" width="100%" prompt="(search)" keyDown="onSearchBoxKeyDown(event)"/>
+			<cavalier:PopOutButton visible="{canPopOut}" click="popOut()"/>
+		</s:HGroup>
+		
+		<s:Group width="100%" height="100%">
+			<!-- When no selection has been made -->
+			<s:Group width="100%" height="100%" visible="{dataProvider.length == 0}">
+				<crescent:SocketGroup width="250" horizontalCenter="0" verticalCenter="0">
+					<s:Label text="No Ad Found" fontSize="18" color="#ffffff"
+							 horizontalCenter="0" verticalCenter="0" />
+				</crescent:SocketGroup>
+			</s:Group>
+
+			<!-- Playlist content -->
+			<s:HGroup width="100%" height="100%" verticalAlign="middle"
+					  visible="{dataProvider.length != 0}">
+				<crescent:List id="list"
+							   width="100%" height="100%"
+							   dataProvider="{dataProvider}"
+							   itemRenderer="plugins.advertising.parts.supportClasses.AdAsListRenderer"
+							   horizontalScrollPolicy="off"
+							   change="onSelectionChange(event)">
+				</crescent:List>
+				
+				<crescent:Pager id="pager" numItems="{numPages}" visible="{showPager}"/>
+			</s:HGroup>
+		</s:Group>
+	</s:VGroup>
+	
+</cavalier:UIPart>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:crescent="library://cavalier/frameworks/crescent"
+		 xmlns:cavalier="library://cavalier/frameworks/cavalier" 
+		 height="138"
+		 implements="frameworks.cavalier.messaging.IMessageRenderer" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			
+			/**
+			 * @public
+			 */
+			private var _data:Object;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public function get data():Object
+			{
+				return _data;
+			}
+			
+			/**
+			 * @public
+			 */
+			public function set data(value:Object):void
+			{
+				_data = value;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<crescent:SocketGroup left="10" right="10" top="0" bottom="0">
+		<s:HGroup width="100%" height="100%" verticalAlign="middle">
+			<s:Group>
+				<cavalier:RingMeter width="90" height="90" percentage="75"/>
+				<s:Label text="2" horizontalCenter="0" verticalCenter="0"
+						 fontSize="36" />
+			</s:Group>
+			
+			<s:Label text="plugins loaded" fontSize="20" color="#b7e3f8"/>			
+		</s:HGroup>
+	</crescent:SocketGroup>
+
+</s:Group>

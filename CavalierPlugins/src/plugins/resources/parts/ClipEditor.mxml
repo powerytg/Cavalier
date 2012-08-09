@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				 xmlns:crescent="library://cavalier/frameworks/crescent"
+				 xmlns:layouts="frameworks.cavalier.ui.layouts.*" 
+				 canPopOut="true" 
+				 resize="onResize()" 
+				 creationComplete="init()" >
+	<fx:Declarations>
+		<s:HorizontalLayout id="hLayout" gap="30"/>
+		<s:VerticalLayout id="vLayout" gap="30"/>
+		<s:TileLayout id="clipTileLayout"
+					  paddingLeft="8" paddingRight="8" paddingTop="8" paddingBottom="8" />
+		
+		<s:VerticalLayout id="clipListLayout"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.models.CDN;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.jobs.ClipJob;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.messaging.events.IndicatorEvent;
+			import frameworks.cavalier.ui.activities.managers.ActivityManager;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			
+			import plugins.resources.activities.AssignTagsActivity;
+			import plugins.resources.indicators.GuessDurationIndicator;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var clip:Clip;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var cdns:ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			private var cdnWatcher:ChangeWatcher;
+			
+			/**
+			 * @private
+			 */
+			private var clipWatcher:ChangeWatcher;
+			
+			/**
+			 * @private
+			 */
+			private var useGlobalClip:Boolean;
+
+			/**
+			 * @private
+			 */
+			private var guessIndicator:GuessDurationIndicator;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				if(!clip){
+					useGlobalClip = true;
+					if(!clipWatcher)
+						clipWatcher = BindingUtils.bindProperty(this, "clip", Aggregator.aggregator, "selectedClip", true);
+				}
+				else
+					useGlobalClip = false;
+				
+				if(!cdnWatcher)
+					cdnWatcher = BindingUtils.bindProperty(this, "cdns", Aggregator.aggregator, "cdns", true);
+			}
+				
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				if(useGlobalClip && !clipWatcher)
+					clipWatcher = BindingUtils.bindProperty(this, "clip", Aggregator.aggregator, "selectedClip", true);
+				
+				if(!cdnWatcher)
+					cdnWatcher = BindingUtils.bindProperty(this, "cdns", Aggregator.aggregator, "cdns", true);
+
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				if(useGlobalClip && clipWatcher){
+					clipWatcher.unwatch();
+					clipWatcher = null;
+				}
+				
+				if(cdnWatcher){
+					cdnWatcher.unwatch();
+					cdnWatcher = null;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override public function destroy():void{
+				super.destroy();
+				
+				if(useGlobalClip && clipWatcher){
+					clipWatcher.unwatch();
+					clipWatcher = null;
+				}
+				
+				clip = null;
+				
+				if(cdnWatcher){
+					cdnWatcher.unwatch();
+					cdnWatcher = null;
+				}
+				
+				cdns = null;
+			}
+			
+			
+			/**
+			 * @public
+			 */
+			override public function createClone():UIPart{
+				var clone:ClipEditor = new ClipEditor();
+				return clone;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onResize():void{
+				if(width > height){
+					layoutGroup.layout = hLayout;
+					optionGroup.percentWidth = 35;
+					propertyGroup.percentWidth = 65;
+				}
+				else{
+					layoutGroup.layout = vLayout;
+					optionGroup.percentWidth = 100;
+					propertyGroup.percentWidth = 100;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onDeleteClick():void{
+				var job:ClipJob = new ClipJob();
+				job.action = CRUDAction.DELETE;
+				job.payload = clip;
+				JobController.jobController.submitJob(job);
+				clip = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onCommitButtonClick():void{
+				JobController.jobController.commit();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onPropertyChange():void{
+				if(!clip)
+					return;
+				
+				var job:ClipJob = new ClipJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = clip;
+				JobController.jobController.submitJob(job);
+				
+				// Update properties on current clip
+				updateProperties();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function updateProperties():void{
+				if(!clip)
+					return;
+				
+				clip.name = nameInput.text;
+				clip.url = urlInput.text;
+				clip.duration = Number(durationInput.text);
+				clip.previewUrl = previewUrlInput.text;
+				clip.releaseDate = releaseDateInput.text;
+				clip.description = descriptionInput.text;
+				clip.live = isLiveCheckBox.selected;
+				clip.dvr = isDVRCheckBox.selected;
+				clip.allowComment = allowCommentCheckBox.selected;
+				clip.cdn = cdnList.selectedItem as CDN;
+				
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onBestGuessClick():void{
+				if(urlInput.text == "" || guessIndicator != null)
+					return;
+				
+				guessIndicator = new GuessDurationIndicator();
+				guessIndicator.url = urlInput.text;
+				guessIndicator.isDVR = isDVRCheckBox.selected;
+				guessIndicator.show();
+				guessIndicator.addEventListener(IndicatorEvent.REMOVED_FROM_CHROME, onGuessIndicatorRemoved, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onGuessIndicatorRemoved(evt:IndicatorEvent):void{
+				if(guessIndicator){
+					durationInput.text = guessIndicator.duration.toString();
+					guessIndicator.removeEventListener(IndicatorEvent.REMOVED_FROM_CHROME, onGuessIndicatorRemoved);
+					guessIndicator = null;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAssignTagsButtonClick():void{
+				var assignTagActivity:AssignTagsActivity = new AssignTagsActivity();
+				assignTagActivity.clip = clip;
+				ActivityManager.activityManager.addActivityToFront(assignTagActivity);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onRemoveAllTagsButtonClick():void{
+				var job:ClipJob = new ClipJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = clip;
+				JobController.jobController.submitJob(job);
+
+				clip.hashtags.removeAll();
+				clip.tags.removeAll();
+				clip.combinedTags.removeAll();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onOverrideAdsButtonClick():void{
+				ActivityManager.activityManager.lookAtOrCreateNewByClassName("AdCuePointEditorActivity");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<cavalier:states>
+		<s:State name="noData"/>
+		<s:State name="normal"/>
+	</cavalier:states>
+	
+	<!-- Content -->
+	<s:Scroller width="{width - 60}" height="100%" horizontalScrollPolicy="off">
+		<s:Group id="layoutGroup" 
+				 width="100%" 
+				 layout="{hLayout}"
+				 visible="{clip!= null}" >
+			<s:VGroup id="optionGroup" width="100%" horizontalAlign="right">
+				<!-- Options -->
+				<crescent:Section title="Resource" width="100%">
+					<s:HGroup width="100%" paddingTop="15" paddingBottom="15"
+							  verticalAlign="middle" >
+						<s:Label text="Clip ID" width="100%"/>
+						<crescent:SocketGroup width="200" height="50">
+							<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="15">
+								<s:Label fontSize="14" color="#cacaca" text="{clip.id}" width="40%" textAlign="center"/>
+								<crescent:RoundedOrangeButton label="Delete" width="100%" height="100%" click="onDeleteClick()"/>
+							</s:HGroup>			
+						</crescent:SocketGroup>									
+					</s:HGroup>
+				</crescent:Section>
+				
+				<crescent:Section title="Options" width="100%">
+					<s:VGroup width="100%" paddingTop="15" paddingBottom="15">
+						<s:Spacer height="15"/>
+						<crescent:Button label="Assign Tags" width="100%" click="onAssignTagsButtonClick()"/>
+						<crescent:Button label="Override Ads" width="100%" click="onOverrideAdsButtonClick()"/>
+						
+						<s:Spacer height="15"/>
+						<crescent:Button label="Commit Changes" width="100%" click="onCommitButtonClick()"/>
+						<crescent:RedButton label="Delete This Clip" width="100%" click="onDeleteClick()"/>
+					</s:VGroup>
+				</crescent:Section>
+			</s:VGroup>
+			
+			<!-- Clip properties -->
+			<!-- Essential -->
+			<s:VGroup id="propertyGroup" width="100%" gap="20">
+				<crescent:Section title="Essentials" width="100%">
+					<s:VGroup width="100%" paddingTop="25">
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="Name" width="40%" textAlign="right"/>
+							<crescent:TextInput id="nameInput" width="100%" text="{clip.name}" change="onPropertyChange()"/>								
+						</s:HGroup>				
+						
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="URI" width="40%" textAlign="right"/>
+							<crescent:TextInput id="urlInput" width="100%" text="{clip.url}" change="onPropertyChange()"/>								
+						</s:HGroup>				
+						
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="Duration" width="40%" textAlign="right"/>
+							<s:HGroup width="100%" verticalAlign="middle">
+								<crescent:TextInput id="durationInput" width="100%" text="{clip.duration}" change="onPropertyChange()"/>
+								<crescent:Button id="guessButton" label="Best Guess" click="onBestGuessClick()"/>								
+							</s:HGroup>
+						</s:HGroup>				
+						
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="Preview URI" width="40%" textAlign="right"/>
+							<crescent:TextInput id="previewUrlInput" width="100%" text="{clip.previewUrl}" change="onPropertyChange()"/>								
+						</s:HGroup>				
+						
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="Live Event" width="40%" textAlign="right"/>
+							<crescent:Switch id="isLiveCheckBox" selected="{clip.live}"  click="onPropertyChange()"/>
+						</s:HGroup>				
+
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="DVR Event" width="40%" textAlign="right"/>
+							<crescent:Switch id="isDVRCheckBox" selected="{clip.dvr}"  click="onPropertyChange()"/>
+						</s:HGroup>				
+						
+					</s:VGroup>
+				</crescent:Section>		
+				
+				<!-- Optional -->
+				<crescent:Section title="Additional" width="100%">
+					<s:VGroup width="100%" paddingTop="25">
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="Release Date (MM-DD-YYYY)" width="40%" textAlign="right"/>
+							<crescent:TextInput id="releaseDateInput" width="100%" text="{clip.releaseDate}" change="onPropertyChange()"/>								
+						</s:HGroup>				
+
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="Descriptions" width="40%" textAlign="right"/>
+							<crescent:TextInput id="descriptionInput" width="100%" text="{clip.description}" change="onPropertyChange()"/>								
+						</s:HGroup>				
+
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="Allow Comments?" width="40%" textAlign="right"/>
+							<crescent:Switch id="allowCommentCheckBox" selected="{clip.allowComment}" click="onPropertyChange()"/>
+						</s:HGroup>				
+
+					</s:VGroup>
+				</crescent:Section>
+				
+				<!-- CDN -->
+				<crescent:Section title="CDN" width="100%">
+					<crescent:actions>
+						<crescent:Button label="Mange CDN List"/>
+					</crescent:actions>
+					<s:Group width="100%">
+						<crescent:List id="cdnList" width="100%"
+									   dataProvider="{cdns}"
+									   selectedItem="{clip.cdn}"
+									   itemRenderer="plugins.resources.parts.supportClasses.CDNRenderer"
+									   verticalScrollPolicy="off" 
+									   change="onPropertyChange()"/> 
+					</s:Group>
+				</crescent:Section>
+				
+				<!-- Tags -->
+				<crescent:Section title="Tags" width="100%">
+					<crescent:actions>
+						<crescent:Button label="Assign Tags" click="onAssignTagsButtonClick()"/>
+						<crescent:RedButton label="Remove All Tags" click="onRemoveAllTagsButtonClick()"/>
+					</crescent:actions>
+					<s:VGroup width="100%" paddingTop="25">
+						<!--
+						<crescent:TextInput id="addTagInput" width="100%" prompt="Enter to add a new tag"/>
+						-->
+						<crescent:List width="100%" dataProvider="{clip.combinedTags}"
+									   itemRenderer="plugins.resources.parts.supportClasses.TagRenderer" 
+									   verticalScrollPolicy="off">
+							<crescent:layout>
+								<layouts:FlowLayout/>
+							</crescent:layout>
+						</crescent:List>
+
+					</s:VGroup>
+				</crescent:Section>
+
+			</s:VGroup>
+		</s:Group>		
+	</s:Scroller>
+
+	<!-- When no selection has been made -->
+	<s:Group width="100%" height="100%" visible="{clip == null}">
+		<crescent:SocketGroup width="250" horizontalCenter="0" verticalCenter="0">
+			<s:Label text="No Clip Selected" fontSize="18" color="#ffffff"
+					 horizontalCenter="0" verticalCenter="0" />
+		</crescent:SocketGroup>
+	</s:Group>
+	
+	<cavalier:PopOutButton right="0" top="-5" visible="{canPopOut}" click="popOut()"/>
+</cavalier:UIPart>

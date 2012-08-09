@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties analytics="false" mainApplicationPath="CavalierPlugins.as" projectUUID="e5e4ae47-2cf9-4ff0-9e8f-2339b58df91a" version="10">
+  <compiler additionalCompilerArguments="-locale en_US&#10;-define CONFIG::FLASH_10_1 true&#10;-define CONFIG::MOCK false&#10;-define CONFIG::PLATFORM true&#10;-define CONFIG::LOGGING false&#10;-swf-version=13" autoRSLOrdering="true" copyDependentFiles="false" fteInMXComponents="false" generateAccessible="false" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="false" useDebugRSLSwfs="true" verifyDigests="true" warn="true">
+    <compilerSourcePath/>
+    <libraryPath defaultLinkType="0">
+      <libraryPathEntry kind="4" path="">
+        <excludedEntries>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/flex.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/core.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry applicationDomain="default" forceLoad="false" index="8" kind="3" linkType="4" path="${PROJECT_FRAMEWORKS}/libs/osmf.swc" useDefaultLinkType="true">
+            <crossDomainRsls>
+              <crossDomainRslEntry autoExtract="true" policyFileUrl="http://fpdownload.adobe.com/pub/swz/crossdomain.xml" rslUrl="http://fpdownload.adobe.com/pub/swz/flex/4.5.1.21328/osmf_1.0.0.16316.swz"/>
+              <crossDomainRslEntry autoExtract="true" policyFileUrl="" rslUrl="osmf_1.0.0.16316.swz"/>
+            </crossDomainRsls>
+          </libraryPathEntry>
+        </excludedEntries>
+      </libraryPathEntry>
+      <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/themes/Mobile/mobile.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/mobile/mobilecomponents.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="3" linkType="1" path="/CrescentUI/bin/CrescentUI.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="3" linkType="1" path="/CavalierSDK/bin/CavalierSDK.swc" useDefaultLinkType="false"/>
+    </libraryPath>
+    <sourceAttachmentPath/>
+  </compiler>
+  <applications>
+    <application path="CavalierPlugins.as"/>
+  </applications>
+  <modules/>
+  <buildCSSFiles/>
+  <flashCatalyst validateFlashCatalystCompatibility="false"/>
+</actionScriptProperties>

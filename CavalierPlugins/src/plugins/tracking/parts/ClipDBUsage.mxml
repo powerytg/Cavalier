@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<parts:StatisticUIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:parts="frameworks.cavalier.ui.parts.*" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:crescent="library://cavalier/frameworks/crescent"
+					   creationComplete="init()"  >
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.TrackingController;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.IAnalysisModel;
+			import frameworks.cavalier.app.models.stat.ClipAnalysisResult;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.parts.events.AdSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.ClipSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.PlaylistSelectorEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.collections.ArrayCollection;
+			
+			/**
+			 * @public
+			 */
+			public var affectedByGlobalSelectors:Boolean = true;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var clip:Clip;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var heatmapUsage:Number = 0;
+
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var trackingUsage:Number = 0;
+
+			/**
+			 * @private
+			 */
+			private function init():void{
+				localMessageBus.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange, false, 0, true);
+
+				if(affectedByGlobalSelectors){
+					Aggregator.aggregator.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange, false, 0, true);					
+					clip = Aggregator.aggregator.selectedClip;
+					
+					if(clip)
+						onResourceChange();
+					
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				if(affectedByGlobalSelectors){
+					Aggregator.aggregator.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange, false, 0, true);
+
+				}
+
+				if(clip != Aggregator.aggregator.selectedClip){
+					clip = Aggregator.aggregator.selectedClip;
+					onResourceChange();
+				}				
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDestroy(evt:ActivityContainerEvent):void{
+				localMessageBus.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange);				
+				Aggregator.aggregator.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange);
+				clip = null;
+				
+				super.onDestroy(evt);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				Aggregator.aggregator.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange);
+
+				clip = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onResourceChange(evt:ClipSelectorEvent = null):void{
+				if(evt)
+					clip = evt.selectedItem;
+				else
+					clip = Aggregator.aggregator.selectedClip;
+				
+				if(clip && clip.id && clip.id != "")
+					TrackingController.trackingController.analysisDBUsageForClip(clip, onDataReceived);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onDataReceived(result:ClipAnalysisResult):void{
+				heatmapUsage = result.heatmapPercentage * 100;
+				trackingUsage = result.trackingClipPercentage * 100;
+			}
+			
+			/**
+			 * @public
+			 */
+			public function clear():void{
+				heatmapUsage = 0;
+				trackingUsage = 0;
+			}
+			
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:SolidColorStroke id="stroke" color="{clip.graphColor}"/>
+		<s:LinearGradient id="fill" rotation="90">
+			<s:GradientEntry color="{clip.graphColor}" alpha="0.3"/>
+			<s:GradientEntry color="{clip.graphColor}" alpha="0"/>
+		</s:LinearGradient>					
+	</fx:Declarations>
+	
+	<s:VGroup id="graphGroup" width="100%" height="100%"
+			 visible="{clip != null}" verticalAlign="middle">
+		
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Heatmap %" width="130"/>
+			<crescent:ProgressBar value="{heatmapUsage}" width="100%"/>
+		</s:HGroup>
+
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Tracking Data %" width="130"/>
+			<crescent:ProgressBar value="{trackingUsage}" width="100%"/>
+		</s:HGroup>
+
+	</s:VGroup> 
+	
+	<!-- If no clip selected -->
+	<s:Group id="infoGroup" width="100%" height="100%" visible="{clip == null}">
+		<crescent:SocketGroup width="250" horizontalCenter="0" verticalCenter="0">
+			<s:Label id="infoLabel" text="No Clip Selected" fontSize="18" color="#ffffff"
+					 horizontalCenter="0" verticalCenter="0" />
+		</crescent:SocketGroup>
+	</s:Group>
+	
+</parts:StatisticUIPart>

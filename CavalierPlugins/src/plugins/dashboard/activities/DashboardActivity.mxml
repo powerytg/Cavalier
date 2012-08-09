@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   xmlns:cavalier="library://cavalier/frameworks/cavalier" 
+				   title="dashboard" 
+				   canClose="false" 
+				   creationComplete="init()"
+				   icon="@Embed('images/DashboardActivityIcon.png')" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.events.ChromeEvent;
+			import frameworks.cavalier.plugin.Plugin;
+			import frameworks.cavalier.plugin.managers.PluginManager;
+			import frameworks.cavalier.ui.activities.managers.ActivityManager;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var plugins:ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var activities:ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			private var pluginWatcher:ChangeWatcher;
+			
+			/**
+			 * @private
+			 */
+			private var activityWatcher:ChangeWatcher;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				// Create tiles for the already-loaded plugins
+				for each(var plugin:Plugin in PluginManager.pluginManager.plugins){
+					// Ignore the Dashboard plugin
+					if(plugin.pluginName.toLowerCase() == "dashboard")
+						continue;
+					
+					var tile:InfoTile = new InfoTile();
+					tile.title = plugin.pluginName;
+					tile.faceColor = plugin.faceColor;
+					tile.percentWidth = 100;
+					tile.height = 110;
+					pluginGroup.addElement(tile);
+				}
+				
+				// Watch statistic info
+				pluginWatcher = BindingUtils.bindProperty(this, "plugins", PluginManager.pluginManager, "plugins", true);
+				activityWatcher = BindingUtils.bindProperty(this, "activities", ActivityManager.activityManager.activityDeck, "activities", true);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onHyperVisionClick():void{
+				ActivityManager.activityManager.lookAtOrCreateNewByClassName("HyperVisionActivity");
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				pluginWatcher = BindingUtils.bindProperty(this, "plugins", PluginManager.pluginManager, "plugins", true);
+				activityWatcher = BindingUtils.bindProperty(this, "activities", ActivityManager.activityManager.activityDeck, "activities", true);
+				
+				// Reset the background to default
+				var event:ChromeEvent = new ChromeEvent(ChromeEvent.RESET_BACKGROUND, true);
+				dispatchEvent(event);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				activityWatcher.unwatch();
+				pluginWatcher.unwatch();
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" height="100%" gap="10">
+		<s:HGroup width="100%" height="170" gap="10">
+			<cavalier:InfoTile title=".dashboard" width="100%" height="100%" faceColor="#086a75">
+				<cavalier:infoContent>
+					<s:VGroup horizontalAlign="right">
+						<s:HGroup verticalAlign="middle">
+							<crescent:NumericLabel text="{activities.length}" faceColor="#124650"/>
+							<s:Label fontSize="16" color="#000000" text="activities running"/>
+						</s:HGroup>
+						
+						<s:HGroup verticalAlign="middle">
+							<crescent:NumericLabel text="{plugins.length}" faceColor="#124650"/>
+							<s:Label fontSize="16" color="#000000" text="plugins loaded"/>
+						</s:HGroup>
+						
+					</s:VGroup>
+				</cavalier:infoContent>
+			</cavalier:InfoTile>
+			<cavalier:ActionTile icon="@Embed('images/Settings.png')" width="170" height="100%"/>
+			<cavalier:ActionTile icon="@Embed('images/Help.png')" width="170" height="100%" click="ActivityManager.activityManager.lookAtOrCreateNewByClassName('AboutActivity');"/>
+		</s:HGroup>
+
+		<s:TileGroup id="pluginGroup" width="100%" height="100%"
+					 columnAlign="justifyUsingWidth" rowAlign="justifyUsingHeight" requestedRowCount="2">
+		</s:TileGroup>
+	</s:VGroup>
+	
+	<crescent:actions>
+		<s:HGroup>
+			<crescent:Button width="40" height="40" icon="@Embed('images/SettingsIcon.png')"/>
+			<crescent:Button label="Hyper Vision" icon="@Embed('images/HyperVision.png')" click="onHyperVisionClick()"/>
+			<crescent:Button label="Map Shortcuts" icon="@Embed('images/Shortcuts.png')" iconPlacement="right"/>
+		</s:HGroup>
+	</crescent:actions>
+
+</crescent:Activity>

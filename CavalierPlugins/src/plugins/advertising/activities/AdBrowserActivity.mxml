@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   xmlns:parts="plugins.advertising.parts.*"
+				   xmlns:resourceParts="plugins.resources.parts.*"
+				   title="browse ads"
+				   icon="@Embed('supportClasses/images/AdIcon.png')"
+				   creationComplete="init()"  
+				   >
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.plugin.managers.ShortcutManager;
+			import frameworks.cavalier.plugin.managers.UIPartManager;
+			import frameworks.cavalier.ui.parts.UIPart;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				var calendar:UIPart = UIPartManager.uiPartManager.requestUIPartByClassName("plugins.resources.parts.TagListWithAdBadge");
+				if(calendar){
+					calendar.percentWidth = 100;
+					calendar.percentHeight = 100;
+					calendarGroup.addElement(calendar);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onImportAdButtonClick():void{
+				ShortcutManager.shortcutManager.evokeShortcutByClassName("ImportAdShortcut");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" height="100%" gap="20">
+		<s:Group id="calendarGroup" width="220" height="100%"/>
+		<parts:AdSelector id="selector" width="100%" height="100%"/>
+		
+		<!-- Action buttons -->
+		<resourceParts:ActionBox width="140" modelType="ad"/>
+	</s:HGroup>
+	
+	<crescent:actions>
+		<crescent:Button id="importAdButton" label="Import Ad" click="onImportAdButtonClick()" icon="@Embed('/images/Add.png')"/>
+	</crescent:actions>
+	
+</crescent:Activity>

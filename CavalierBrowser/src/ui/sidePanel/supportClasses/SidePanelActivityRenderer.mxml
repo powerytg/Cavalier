@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:crescent="library://cavalier/frameworks/crescent"
+				height="38" width="100%" 
+				autoDrawBackground="false" 
+				click="onClick(event)"	>
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.events.ItemClickEvent;
+			protected function onClick(event:MouseEvent):void
+			{
+				var evt:ItemClickEvent = new ItemClickEvent(ItemClickEvent.ITEM_CLICK, true);
+				evt.item = data;
+				dispatchEvent(evt);
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<crescent:DefaultItemRendererBackground width="100%" height="100%"
+											alpha.normal="0" alpha.selected="1"/>
+
+	
+	<s:Label verticalCenter="0" left="10"
+			 text="{data.activityName}"
+			 color="#ffffff" fontSize="18" fontWeight="normal">
+		<s:filters.selected>
+			<s:GlowFilter color="#005e65" blurX="3" blurY="3"/>
+		</s:filters.selected>
+	</s:Label> 
+	
+</s:ItemRenderer>

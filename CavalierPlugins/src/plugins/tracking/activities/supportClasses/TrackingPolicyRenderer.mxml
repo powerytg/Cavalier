@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:crescent="library://cavalier/frameworks/crescent"
+				width="100%" 
+				autoDrawBackground="false"	>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.models.jobs.AdPolicyJob;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.jobs.TrackingPolicyJob;
+			import frameworks.cavalier.polkit.Policy;
+			import frameworks.cavalier.polkit.PolicyKind;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var policy:Policy;
+			
+			/**
+			 * @public
+			 */
+			override public function set data(value:Object):void{
+				super.data = value;
+				policy = value as Policy;
+				
+				if(contentGroup){
+					contentGroup.removeAllElements();
+					if(policy.kind == PolicyKind.BOOLEAN)
+						contentGroup.addElement(booleanRenderer);
+					else if(policy.kind == PolicyKind.NUMERIC_OR_STRING)
+						contentGroup.addElement(stringRenderer);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function measure():void{
+				super.measure();
+				
+				if(policy.kind == PolicyKind.BOOLEAN)
+					measuredHeight = 50;
+				else if(policy.kind == PolicyKind.NUMERIC_OR_STRING)
+					measuredHeight = 70;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onValueChange():void{
+				var job:TrackingPolicyJob = new TrackingPolicyJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = policy;
+				JobController.jobController.submitJob(job);
+				
+				policy.value = valueInput.text;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onSwitchClick():void{
+				var job:TrackingPolicyJob = new TrackingPolicyJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = policy;
+				JobController.jobController.submitJob(job);
+				
+				policy.value = valueSwitch.selected;				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:VGroup id="stringRenderer" width="100%">
+			<s:Label color="#696969" text="{policy.name}"/>
+			<crescent:TextInput id="valueInput" width="100%" text="{policy.value}" change="onValueChange()"/>
+		</s:VGroup>
+		
+		<s:HGroup id="booleanRenderer" width="100%" verticalAlign="middle">
+			<s:Label color="#696969" text="{policy.name}" width="100%"/>
+			<crescent:Switch id="valueSwitch" selected="{policy.value}" click="onSwitchClick()"/>
+		</s:HGroup>
+	</fx:Declarations>
+	
+	<s:Group id="contentGroup" width="100%" height="100%"/>
+	
+</s:ItemRenderer>

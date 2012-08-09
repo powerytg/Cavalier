@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<messaging:IndicatorBase xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						 xmlns:s="library://ns.adobe.com/flex/spark" 
+						 xmlns:messaging="frameworks.cavalier.ui.messaging.*" 
+						 width="100%" height="100%" xmlns:crescent="library://cavalier/frameworks/crescent">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.messaging.events.IndicatorEvent;
+			
+			/**
+			 * @public
+			 */
+			public var autoHide:Boolean = true;
+			
+			/**
+			 * @public
+			 */
+			public var duration:Number = 5000;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var text:String;
+			
+			/**
+			 * @private
+			 */
+			private var timer:Timer;
+			
+			/**
+			 * @public
+			 */
+			public function onClick():void{
+				close();
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onAddedToChrome(evt:IndicatorEvent):void{
+				super.onAddedToChrome(evt);
+				
+				if(autoHide){
+					timer = new Timer(duration);
+					timer.addEventListener(TimerEvent.TIMER, onTimer, false, 0, true);
+					timer.start();
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onRemovedFromChrome(evt:IndicatorEvent):void{
+				super.onRemovedFromChrome(evt);
+				
+				if(timer){
+					timer.stop();
+					timer.removeEventListener(TimerEvent.TIMER, onTimer);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimer(evt:TimerEvent):void{
+				close();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BitmapImage source="@Embed('images/IndicatorInfo.png')"/>
+	
+	<s:HGroup width="100%" height="100%"
+			  paddingLeft="25" paddingRight="25" verticalAlign="middle">
+		<s:Label fontSize="24" text="{text}"/>
+		<s:Spacer width="25"/>
+		<s:HGroup width="100%" horizontalAlign="right" gap="15">
+			<crescent:Button width="120" label="Back" click="onClick()"/>
+		</s:HGroup>
+	</s:HGroup>
+
+	
+</messaging:IndicatorBase>

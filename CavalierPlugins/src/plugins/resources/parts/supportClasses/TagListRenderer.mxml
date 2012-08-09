@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:crescent="library://cavalier/frameworks/crescent"
+				xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				height="60" width="100%" 
+				autoDrawBackground="false" 	>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.Tag;
+
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var hasOnlyClip:Boolean = false;
+
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var hasOnlyAd:Boolean = false;
+
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var hasClipAndAd:Boolean = false;
+
+			/**
+			 * @public
+			 */
+			override public function set data(value:Object):void{
+				super.data = value;
+				
+				if(!value)
+					return;
+				
+				var tag:Tag = value as Tag;
+				hasOnlyClip = tag.numClips != 0 && tag.numAds == 0;
+				hasOnlyAd = tag.numAds != 0 && tag.numClips == 0;
+				hasClipAndAd = tag.numClips != 0 && tag.numAds != 0;
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				graphics.clear();
+				graphics.lineStyle(1, 0x959595);
+				graphics.moveTo(0, unscaledHeight);
+				graphics.lineTo(unscaledWidth, unscaledHeight);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<crescent:DefaultItemRendererBackground width="100%" height="100%"
+										 	alpha.normal="0" alpha.selected="1"/>
+	
+	<s:HGroup id="layoutGroup" 
+			  width="100%" height="100%"
+			  verticalAlign="middle"
+			  paddingLeft="10"  paddingRight="10">
+
+		<s:Label text="{data.name}" fontSize="24"
+				 width="100%" >
+			<s:filters.selected>
+				<s:GlowFilter color="#005e65" blurX="4" blurY="4" strength="3"/>
+			</s:filters.selected>
+		</s:Label>
+		
+		<!-- If is pending -->
+		<crescent:SocketGroup width="90" visible="{data.id == null}">
+			<s:Label horizontalCenter="0" verticalCenter="0" text="Pending"/>
+		</crescent:SocketGroup>			
+
+		<!-- Badge -->
+		<s:Group>
+			<!-- If assigned to clips -->
+			<s:BitmapImage source="@Embed('../images/HasClip.png')" visible="{hasOnlyClip}" verticalCenter="0"/>
+
+			<!-- If assigned to ads -->
+			<s:BitmapImage source="@Embed('../images/HasAd.png')" visible="{hasOnlyAd}" verticalCenter="0"/>
+
+			<!-- If assigned to clips and ads -->
+			<s:BitmapImage source="@Embed('../images/HasClipAndAd.png')" visible="{hasClipAndAd}" verticalCenter="0"/>
+		</s:Group>
+	</s:HGroup> 
+	
+	
+	
+	
+</s:ItemRenderer>

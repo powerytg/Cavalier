@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:crescent="library://cavalier/frameworks/crescent"	
+				autoDrawBackground="false" 
+				height="66">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<s:transitions>
+		<s:Transition toState="selected">
+			<s:Sequence target="{removeButton}">
+				<s:Resize/>
+				<s:Fade/>
+			</s:Sequence>
+		</s:Transition>
+		
+		<s:Transition toState="normal">
+			<s:Resize target="{removeButton}"/>
+		</s:Transition>
+		
+	</s:transitions>
+	
+	<s:BitmapImage left="0" right="0" top="0" bottom="0"
+				   source="@Embed(source='images/Tag.png', scaleGridTop=20, scaleGridBottom=40, scaleGridLeft=60, scaleGridRight=70)" visible.selected="false"/>
+	
+	<s:BitmapImage left="0" right="0" top="0" bottom="0"
+				   source="@Embed(source='images/TagSelected.png', scaleGridTop=20, scaleGridBottom=40, scaleGridLeft=60, scaleGridRight=70)" visible.normal="false"/>
+	
+	<s:HGroup paddingLeft="65" paddingRight="20" 
+			  verticalCenter="0" verticalAlign="middle" horizontalAlign="center">
+		<s:Label text="{data.name}" />
+		
+		<crescent:RoundedOrangeButton id="removeButton" label="Remove"
+									  alpha.normal="0" width.normal="0" 
+									  verticalCenter="0" />
+		
+	</s:HGroup>
+</s:ItemRenderer>

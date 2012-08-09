@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				 xmlns:crescent="library://cavalier/frameworks/crescent"
+				 affectedDomain="global" 
+				 canPopOut="true" 
+				 creationComplete="init()"  >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.AdController;
+			import frameworks.cavalier.app.controllers.ClipController;
+			import frameworks.cavalier.app.controllers.PlaylistController;
+			import frameworks.cavalier.app.events.SearchEvent;
+			import frameworks.cavalier.app.models.Ad;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.Playlist;
+			import frameworks.cavalier.app.models.query.QueryCondition;
+			import frameworks.cavalier.app.models.stat.MonthStatistic;
+			import frameworks.cavalier.app.models.stat.SpecialStatisticEntries;
+			import frameworks.cavalier.app.models.stat.YearStatistic;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.parts.UIPartAffectedDomain;
+			import frameworks.cavalier.ui.parts.events.AdSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.CalendarEvent;
+			import frameworks.cavalier.ui.parts.events.ClipSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.PlaylistSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.TagListEvent;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.events.IndexChangeEvent;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var itemsPerPage:Number = 9;
+			
+			/**
+			 * @public
+			 */
+			public var condition:QueryCondition;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var clips:ArrayCollection = new ArrayCollection();
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var playlists:ArrayCollection = new ArrayCollection();
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var ads:ArrayCollection = new ArrayCollection();
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var numPlaylistPages:Number = 1;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var numClipPages:Number = 1;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var numAdPages:Number = 1;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var totalPlaylistItems:Number;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var totalClipItems:Number;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var totalAdItems:Number;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var numPlaylistLoadedPages:Number;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var numClipLoadedPages:Number;
+
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var numAdLoadedPages:Number;
+
+			/**
+			 * @private
+			 */
+			private function init():void{
+				localMessageBus.addEventListener(CalendarEvent.PLAYLIST_DATE_CHANGE, onDateChange, false, 0, true);
+				localMessageBus.addEventListener(CalendarEvent.CLIP_DATE_CHANGE, onDateChange, false, 0, true);
+				localMessageBus.addEventListener(TagListEvent.TAG_SELECTION_CHANGE, onTagChange, false, 0, true);
+				
+				addEventListener(SearchEvent.CONDITION_CHANGE, onConditionChange, false, 0, true);
+				
+			}
+			
+			/**
+			 * @public
+			 */
+			override public function destroy():void{
+				removeEventListener(SearchEvent.CONDITION_CHANGE, onConditionChange);
+				localMessageBus.removeEventListener(CalendarEvent.PLAYLIST_DATE_CHANGE, onDateChange);
+				localMessageBus.removeEventListener(CalendarEvent.CLIP_DATE_CHANGE, onDateChange);
+				localMessageBus.removeEventListener(TagListEvent.TAG_SELECTION_CHANGE, onTagChange);
+
+				
+				playlists.removeAll();
+				playlists = null;
+				
+				clips.removeAll();
+				clips = null;
+				
+				ads.removeAll();
+				ads = null;
+				
+				super.destroy();
+			}
+			
+			/**
+			 * @public
+			 */
+			override public function createClone():UIPart{
+				var clone:AwesomeSelector = new AwesomeSelector();
+				clone.itemsPerPage = itemsPerPage;
+				clone.numPlaylistLoadedPages = numPlaylistLoadedPages;
+				clone.numClipLoadedPages = numClipLoadedPages;
+				clone.numAdLoadedPages = numAdLoadedPages;
+				
+				for each(var playlist:Playlist in playlists){
+					clone.playlists.addItem(playlist);
+				}
+
+				for each(var clip:Clip in clips){
+					clone.clips.addItem(clip);
+				}
+
+				for each(var ad:Ad in ads){
+					clone.ads.addItem(ad);
+				}
+
+				return clone;
+			}
+
+			/**
+			 * @private
+			 */
+			protected function clearAll():void{
+				playlists.removeAll();
+				clips.removeAll();
+				ads.removeAll();
+				
+				numPlaylistPages = 1;
+				numPlaylistLoadedPages = 0;
+				
+				numClipPages = 1;
+				numClipLoadedPages = 0;
+				
+				numAdPages = 1;
+				numAdLoadedPages = 0;
+			}
+
+			/**
+			 * @private
+			 */
+			protected function onDateChange(evt:CalendarEvent):void{
+				var condition:QueryCondition = new QueryCondition();
+				condition.clearPreviousRecords = true;
+				
+				if(evt.selectedItem is YearStatistic){
+					var year:Number = (evt.selectedItem as YearStatistic).year;
+					condition.year = year;
+				}
+				else if(evt.selectedItem is MonthStatistic){
+					var monthStat:MonthStatistic = evt.selectedItem as MonthStatistic;
+					if(monthStat.year != SpecialStatisticEntries.ALL && monthStat.month != SpecialStatisticEntries.ALL){
+						condition.year = monthStat.year;
+						condition.month = monthStat.month;
+					}
+				}
+				
+				var event:SearchEvent = new SearchEvent(SearchEvent.CONDITION_CHANGE);
+				event.condition = condition;
+				onConditionChange(event);
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onTagChange(evt:TagListEvent):void{
+				var condition:QueryCondition = new QueryCondition();
+				condition.clearPreviousRecords = true;
+				condition.tag = evt.selectedTag;
+				
+				var event:SearchEvent = new SearchEvent(SearchEvent.CONDITION_CHANGE);
+				event.condition = condition;
+				onConditionChange(event);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onConditionChange(evt:SearchEvent):void{
+				if(evt.condition.clearPreviousRecords){
+					clearAll();
+				}
+				
+				condition = evt.condition;
+				
+				// Base on the condition supported by different types of resources, call the respective search methods
+				if(
+					(condition.tag && condition.tag.id == SpecialStatisticEntries.PENDING.toString())
+					|| (condition.month == SpecialStatisticEntries.PENDING)){
+					
+					numPlaylistLoadedPages += 1;
+					numClipLoadedPages += 1;
+					numAdLoadedPages += 1;
+					
+					clearAll();
+					playlists.addAll(Aggregator.aggregator.pendingPlaylists);
+					clips.addAll(Aggregator.aggregator.pendingClips);
+					ads.addAll(Aggregator.aggregator.pendingAds);
+					return;
+				}
+				else{
+					searchPlaylist(1);
+					searchClip(1);
+					searchAd(1);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function searchPlaylist(page:Number):void{
+				var dispatcher:EventDispatcher;
+				
+				if(condition.tag && condition.tag.id != SpecialStatisticEntries.ALL.toString())
+					return;
+				else if((condition.keywords != "" && condition.keywords != null) || 
+					(condition.tag && condition.tag.id == SpecialStatisticEntries.ALL.toString()))
+					dispatcher = PlaylistController.playlistController.searchPlaylist(page, itemsPerPage, condition.keywords);
+				else if(isNaN(condition.year) || condition.year <= 0)
+					dispatcher = PlaylistController.playlistController.searchPlaylist(page, itemsPerPage, "all");
+				else if(isNaN(condition.month) || condition.month <= 0)
+					dispatcher = PlaylistController.playlistController.searchPlaylist(page, itemsPerPage, "all", condition.year);
+				else
+					dispatcher = PlaylistController.playlistController.searchPlaylist(page, itemsPerPage, "all", condition.year, condition.month);
+				
+				dispatcher.addEventListener(SearchEvent.PLAYLIST_SEARCH_RESULT, onPlaylistSearchResult, false, 0, true);
+				numPlaylistLoadedPages += 1;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onPlaylistSearchResult(evt:SearchEvent):void{
+				playlists.addAll(evt.payload.result as ArrayCollection);
+				numPlaylistPages = evt.payload.numPages;
+				totalPlaylistItems = evt.payload.totalItems;
+				
+				playlistHeader.height = playlists.length == 0 ? 0 : playlistHeader.measuredHeight;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function searchClip(page:Number):void{
+				var dispatcher:EventDispatcher;
+				if(condition.keywords != "" && condition.keywords != null)
+					dispatcher = ClipController.clipController.searchClip(page, itemsPerPage, condition.keywords);
+				else if(condition.tag != null && condition.tag.id != SpecialStatisticEntries.ALL.toString())
+					dispatcher = ClipController.clipController.searchClip(page, itemsPerPage, "all", condition.tag);
+				else if(isNaN(condition.month) || condition.month <= 0)
+					dispatcher = ClipController.clipController.searchClip(page, itemsPerPage, "all", null, condition.year);
+				else
+					dispatcher = ClipController.clipController.searchClip(page, itemsPerPage, "all", null, condition.year, condition.month);
+				
+				dispatcher.addEventListener(SearchEvent.CLIP_SEARCH_RESULT, onClipSearchResult, false, 0, true);
+				numClipLoadedPages += 1;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onClipSearchResult(evt:SearchEvent):void{
+				clips.addAll(evt.payload.result as ArrayCollection);
+				numClipPages = evt.payload.numPages;
+				totalClipItems = evt.payload.totalItems;
+				
+				clipHeader.height = clips.length == 0 ? 0 : clipHeader.measuredHeight;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function searchAd(page:Number):void{
+				var dispatcher:EventDispatcher;
+				if(condition.year || condition.month ){
+					return;
+				}
+					
+				else if(condition.keywords != "" && condition.keywords != null)
+					dispatcher = AdController.adController.searchAd(page, itemsPerPage, condition.keywords);
+				else if(condition.tag != null && condition.tag.id != SpecialStatisticEntries.ALL.toString())
+					dispatcher = AdController.adController.searchAd(page, itemsPerPage, "all", condition.tag);
+				else
+					dispatcher = AdController.adController.searchAd(page, itemsPerPage, "all", null);
+				
+				dispatcher.addEventListener(SearchEvent.AD_SEARCH_RESULT, onAdSearchResult, false, 0, true);
+				numAdLoadedPages += 1;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAdSearchResult(evt:SearchEvent):void{
+				ads.addAll(evt.payload.result as ArrayCollection);
+				numAdPages = evt.payload.numPages;
+				totalAdItems = evt.payload.totalItems;
+				
+				adHeader.height = ads.length == 0 ? 0 : adHeader.measuredHeight;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onPlaylistSelectionChange(evt:IndexChangeEvent):void{
+				var selectedPlaylist:Playlist = playlistList.selectedItem as Playlist;
+				var event:PlaylistSelectorEvent = new PlaylistSelectorEvent(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE);
+				event.selectedItem = selectedPlaylist;
+				
+				if(affectedDomain == UIPartAffectedDomain.GLOBAL){
+					// This will affect global playlist selection
+					Aggregator.aggregator.selectedPlaylist = selectedPlaylist;
+					Aggregator.aggregator.dispatchEvent(event);
+				}
+				else{
+					localMessageBus.dispatchEvent(event);
+				}
+				
+				// The next thing to do is to update the details for the selected playlist
+				if(!Aggregator.aggregator.pendingPlaylists.contains(selectedPlaylist))
+					PlaylistController.playlistController.getPlaylist(selectedPlaylist);
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onClipSelectionChange(evt:IndexChangeEvent):void{
+				var selectedClip:Clip = clipList.selectedItem as Clip;
+				var event:ClipSelectorEvent = new ClipSelectorEvent(ClipSelectorEvent.CLIP_SELECTION_CHANGE);
+				event.selectedItem = selectedClip;
+				
+				if(affectedDomain == UIPartAffectedDomain.GLOBAL){
+					// This will affect global playlist selection
+					Aggregator.aggregator.selectedClip = selectedClip;
+					Aggregator.aggregator.dispatchEvent(event);
+				}
+				else{
+					localMessageBus.dispatchEvent(event);
+				}
+				
+				// The next thing to do is to update the details for the selected playlist
+				ClipController.clipController.getClip(selectedClip);
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onAdSelectionChange(evt:IndexChangeEvent):void{
+				var selectedAd:Ad = adList.selectedItem as Ad;
+				var event:AdSelectorEvent = new AdSelectorEvent(AdSelectorEvent.AD_SELECTION_CHANGE);
+				event.selectedItem = selectedAd;
+				
+				if(affectedDomain == UIPartAffectedDomain.GLOBAL){
+					// This will affect global playlist selection
+					Aggregator.aggregator.selectedAd = selectedAd;
+					Aggregator.aggregator.dispatchEvent(event);
+				}
+				else{
+					localMessageBus.dispatchEvent(event);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onSearchBoxKeyDown(evt:KeyboardEvent):void{
+				if(evt.keyCode == Keyboard.ENTER){
+					if(searchBox.text != ""){
+						condition = new QueryCondition();
+						condition.clearPreviousRecords = true;
+						condition.keywords = searchBox.text;
+						
+						var event:SearchEvent = new SearchEvent(SearchEvent.CONDITION_CHANGE);
+						event.condition = condition;
+						onConditionChange(event);
+					}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onMorePlaylistClick():void
+			{
+				if(numPlaylistLoadedPages < numPlaylistPages){
+					searchPlaylist(numPlaylistLoadedPages + 1);
+				}
+			}
+
+			/**
+			 * @private
+			 */
+			protected function onMoreClipClick():void
+			{
+				if(numClipLoadedPages < numClipPages){
+					searchClip(numClipLoadedPages + 1);
+				}
+			}
+
+			/**
+			 * @private
+			 */
+			protected function onMoreAdClick():void
+			{
+				if(numAdLoadedPages < numAdPages){
+					searchAd(numAdLoadedPages + 1);
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%" verticalAlign="middle" paddingLeft="26" >
+			<crescent:TextInput id="searchBox" width="100%" prompt="(search)" keyDown="onSearchBoxKeyDown(event)"/>
+			<cavalier:PopOutButton visible="{canPopOut}" click="popOut()"/>
+		</s:HGroup>
+		
+		<s:Scroller width="100%" height="100%">
+			<s:VGroup id="resultGroup" width="100%" paddingLeft="26">
+				
+				<s:HGroup id="playlistHeader" width="100%" visible="{playlists.length != 0}" verticalAlign="middle">
+					<cavalier:BadgeSectionTitleBar width="100%" title="Playlists" numItems="{totalPlaylistItems}"/>
+					<crescent:RoundedOrangeButton label="More" click="onMorePlaylistClick()"/>
+				</s:HGroup>
+				<crescent:List id="playlistList"
+							   width="100%" minHeight="0"
+							   dataProvider="{playlists}"
+							   itemRenderer="plugins.awesomeSearch.parts.supportClasses.PlaylistRenderer"
+							   horizontalScrollPolicy="off" verticalScrollPolicy="off"
+							   change="onPlaylistSelectionChange(event)">
+					<crescent:layout>
+						<s:VerticalLayout variableRowHeight="true" gap="0"/>
+					</crescent:layout>
+				</crescent:List>
+				
+				<s:HGroup id="clipHeader" width="100%" visible="{clips.length != 0}" verticalAlign="middle">
+					<cavalier:BadgeSectionTitleBar width="100%" title="Clips" numItems="{totalClipItems}"/>
+					<crescent:RoundedOrangeButton label="More" click="onMoreClipClick()"/>
+				</s:HGroup>
+				<crescent:List id="clipList"
+							   width="100%" minHeight="0"
+							   dataProvider="{clips}"
+							   itemRenderer="plugins.awesomeSearch.parts.supportClasses.ClipRenderer"
+							   horizontalScrollPolicy="off" verticalScrollPolicy="off"
+							   change="onClipSelectionChange(event)">
+					<crescent:layout>
+						<s:VerticalLayout variableRowHeight="true" gap="0"/>
+					</crescent:layout>
+
+				</crescent:List> 
+				
+				<s:HGroup id="adHeader" width="100%" visible="{ads.length != 0}" verticalAlign="middle">
+					<cavalier:BadgeSectionTitleBar width="100%" title="Advertisements" numItems="{totalAdItems}"/>
+					<crescent:RoundedOrangeButton label="More" click="onMoreAdClick()"/>
+				</s:HGroup>
+				
+				<crescent:List id="adList"
+							   width="100%" minHeight="0"
+							   dataProvider="{ads}"
+							   itemRenderer="plugins.awesomeSearch.parts.supportClasses.AdRenderer"
+							   horizontalScrollPolicy="off" verticalScrollPolicy="off"
+							   change="onAdSelectionChange(event)">
+					<crescent:layout>
+						<s:VerticalLayout variableRowHeight="true" gap="0"/>
+					</crescent:layout>
+				</crescent:List> 
+			</s:VGroup>
+		</s:Scroller>
+	</s:VGroup>
+	
+</cavalier:UIPart>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:crescent="library://cavalier/frameworks/crescent" >
+	
+	<!-- host component -->
+	<fx:Metadata>
+		[HostComponent("plugins.videoMetrics.parts.BitrateChartWidget")]
+	</fx:Metadata>
+	
+	<!-- SkinParts
+	name=chart, type=mx.charts.chartClasses.ChartBase, required=true
+	-->
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="multibitrate"/>
+		<s:State name="disabled"/>
+	</s:states>
+	<!--
+	<s:Rect width="100%" height="100%" alpha=".7" radiusX="5">
+		<s:fill>
+			<s:SolidColor color="#333333"/>
+		</s:fill>
+	</s:Rect>
+	-->
+	
+	<crescent:SocketGroup width="100%" height="100%">
+		<s:VGroup width="100%" height="100%" horizontalAlign="center" >
+			
+			<s:Group width="100%">
+				<s:Label
+					horizontalCenter="0"
+					verticalCenter="5"
+					id="timeToSwitchLabel"
+					color="white"/>
+			</s:Group>
+			
+			<mx:LineChart
+				id="chart"
+				width="100%" height="100%"
+				paddingRight.normal="10">
+				<mx:verticalAxis>
+					<mx:LinearAxis
+						id="verticalLinearAxis"
+						minimum="0"
+						maximum="3200"
+						title.multibitrate="Bitrate"/>			
+				</mx:verticalAxis>
+				
+				<mx:verticalAxisRenderers>
+					<mx:AxisRenderer
+						placement="right"
+						axis="{verticalLinearAxis}"
+						showLine="false"
+						showLabels.normal="false"
+						tickPlacement="none"
+						color="white"
+						fontSize="11"
+						letterSpacing="1"/>
+					<mx:AxisRenderer
+						placement="left"
+						axis="{bufferLengthAxis}"
+						showLine="false"
+						tickPlacement="none"
+						color="white"
+						fontSize="11"
+						letterSpacing="1"/>
+				</mx:verticalAxisRenderers>
+				
+				<mx:horizontalAxis>
+					<mx:LinearAxis
+						id="horizontalLinearAxis"/>
+				</mx:horizontalAxis>
+				
+				<mx:horizontalAxisRenderers>
+					<mx:AxisRenderer 
+						axis="{horizontalLinearAxis}"
+						showLabels="false"
+						tickPlacement="none"/>
+				</mx:horizontalAxisRenderers>
+				
+				<mx:series>
+					
+					<mx:LineSeries
+						displayName="Bitrate"
+						filterData="false"
+						yField="currentBitrate"
+						visible="false"
+						visible.multibitrate="true"
+						form="step"
+						legendMarkerRenderer="mx.charts.renderers.CircleItemRenderer"/>
+					
+					<mx:LineSeries
+						displayName="Max Bitrate"
+						filterData="false"
+						yField="maximumBitrate"
+						visible="false"
+						visible.multibitrate="true"
+						form="step"
+						legendMarkerRenderer="mx.charts.renderers.CircleItemRenderer"/>
+					
+					<mx:LineSeries
+						displayName="Buffer"
+						filterData="false"
+						yField="bufferLength"
+						form="step"
+						legendMarkerRenderer="mx.charts.renderers.CircleItemRenderer">
+						
+						<mx:verticalAxis>
+							<mx:LinearAxis id="bufferLengthAxis" minimum="0" maximum="12" interval="4" title="Buffer Size"/>
+						</mx:verticalAxis>					
+					</mx:LineSeries>
+					
+					<!--<mx:LineSeries
+					filterData="false"
+					yField="backBufferLength"
+					form="step">
+					
+					<mx:verticalAxis>
+					<mx:LinearAxis id="backBufferLengthAxis" minimum="0" maximum="14" interval="2"/>
+					</mx:verticalAxis>
+					
+					</mx:LineSeries>-->
+					
+				</mx:series>
+				
+			</mx:LineChart>
+			
+			<mx:Legend dataProvider="{chart}" direction="horizontal" color="white"/>
+			
+		</s:VGroup>
+		
+	</crescent:SocketGroup>
+	
+	
+</s:Skin>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:crescent="library://cavalier/frameworks/crescent"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				height="100" width="100%"
+			 	autoDrawBackground="false" > 
+				
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:SolidColorStroke id="gridStroke" color="#00c6eb" alpha="0.3"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.AdDistributionRule;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.Sort;
+			
+			import spark.collections.SortField;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var rule:AdDistributionRule;
+			
+			/**
+			 * @private
+			 */
+			private var numMaxPlots:Number = 15;
+			
+			/**
+			 * @private
+			 */
+			private var minInterval:Number = 10;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var interval:Number;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var yTicks:ArrayCollection = new ArrayCollection([0]);
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var cuePoints:ArrayCollection = new ArrayCollection();
+			
+			/**
+			 * @private
+			 */
+			override public function set data(value:Object):void{
+				super.data = value;
+				rule = value as AdDistributionRule;
+
+				if(rule)
+					updateDataPlots();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function updateDataPlots():void{
+				cuePoints.removeAll();
+				
+				// Calculate interval
+				var numPlots:Number = (rule.endPoint - rule.startPoint) / minInterval;
+				if(numPlots > numMaxPlots)
+					interval = Math.floor((rule.endPoint - rule.startPoint) / numMaxPlots);
+				else
+					interval = minInterval;
+				
+				// Create ad cuepoints
+				var adInterval:Number = (rule.endPoint - rule.startPoint) / (rule.numAds + 1);
+				for(var i:uint = 0; i < rule.numAds; i++){
+					cuePoints.addItem({x: rule.startPoint + i * adInterval, y: 0, r: 50});
+				}
+				
+				bubbleSeries.dataProvider = cuePoints;
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<s:BitmapImage left="0" right="0" top="0" bottom="0"
+				   visible.normal="false"	
+				   source="@Embed(source='images/RuleBackground.png', scaleGridLeft=10, scaleGridTop=10, scaleGridRight=30, scaleGridBottom=30)" />
+	
+	
+	<s:HGroup width="100%" height="100%" verticalAlign="middle" gap="25">
+		<s:Label color="#9c9c9c" fontSize="30" fontStyle="italic"
+				 paddingLeft="5" 
+				 text="{itemIndex + 1}"/> 
+		
+		<!-- Distribution chart -->
+		<s:Group id="canvas" width="100%" height="100%">
+			<mx:BubbleChart width="100%" height="100%" clipContent="false"
+							showDataTips="false"	
+						  	paddingLeft="15" paddingRight="15" paddingTop="20"	
+							maxRadius="50">
+				
+				<mx:series>
+					<mx:BubbleSeries id="bubbleSeries" xField="x" yField="y" radiusField="r"
+									 dataProvider="{cuePoints}"
+									 itemRenderer="plugins.advertising.activities.supportClasses.AdDistributionMarkerRenderer" />
+				</mx:series>
+				
+				<mx:backgroundElements>
+					<mx:GridLines gridDirection="vertical" 
+								  verticalStroke="{gridStroke}" horizontalStroke="{gridStroke}"
+								  horizontalOriginStroke="{gridStroke}"/>
+				</mx:backgroundElements>
+				
+				<mx:horizontalAxis>
+					<mx:LinearAxis id="hAxis" minimum="{rule.startPoint}" maximum="{rule.endPoint}"/>
+				</mx:horizontalAxis>
+				
+				<mx:verticalAxis>
+					<mx:CategoryAxis id="vAxis" dataProvider="{yTicks}"/> 
+				</mx:verticalAxis>
+				
+				<mx:horizontalAxisRenderers>
+					<mx:AxisRenderer axis="{hAxis}" showLabels="true" showLine="false"
+									 tickStroke="{gridStroke}" />
+				</mx:horizontalAxisRenderers>
+				
+				<mx:verticalAxisRenderers>
+					<mx:AxisRenderer axis="{vAxis}" showLabels="false" showLine="false" visible="false" 
+									 tickStroke="{gridStroke}" />
+				</mx:verticalAxisRenderers>
+				
+			</mx:BubbleChart>	
+		</s:Group>		
+	</s:HGroup>
+	
+</s:ItemRenderer>

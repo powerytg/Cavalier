@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:crescent="library://cavalier/frameworks/crescent"
+			   xmlns:chrome="ui.chrome.*"
+			   backgroundColor="#000000" backgroundAlpha="0"
+			   creationComplete="init()"
+			   minWidth="1024" minHeight="768">
+	<fx:Script>
+		<![CDATA[
+			import ui.chrome.RetryWindow;
+			import frameworks.cavalier.app.controllers.CDNController;
+			import frameworks.cavalier.app.controllers.DBController;
+			import frameworks.cavalier.app.controllers.StatisticController;
+			import frameworks.cavalier.app.controllers.TagController;
+			import frameworks.cavalier.messaging.SystemBus;
+			import frameworks.cavalier.messaging.models.MessageLevel;
+			
+			import ui.chrome.controllers.ChromeController;
+			import ui.messagePanel.supportClasses.indicators.ActivityMonitor;
+			import ui.messagePanel.supportClasses.indicators.QuickSettings;
+			
+			/**
+			 * @private
+			 */
+			private var retryWindow:RetryWindow;
+			
+			/**
+			 * @public
+			 * 
+			 * The root controller
+			 */
+			[Bindable]
+			public var appController:ChromeController = new ChromeController();
+			
+			/**
+			 * @private
+			 */
+			private function init():void
+			{
+				appController.chrome = chrome;
+				appController.initialize();
+				bootStrap();
+			}
+			
+			/**
+			 * @private
+			 */
+			public function bootStrap():void{
+				try{
+					StatisticController.statisticController.getStatByAllTime(null, showRetryWindow);
+					StatisticController.statisticController.getClipStatByAllTime(null, showRetryWindow);
+					
+					TagController.tagController.getAllTags();
+					CDNController.cdnController.getAllCDNs();
+					
+					SystemBus.systemBus.newTextMessage("Welcome to OSMF");
+					SystemBus.systemBus.newTextMessage("This is not a stable build");
+					SystemBus.systemBus.newTextMessage("Alert: Full screen not functioning", MessageLevel.ALERT);
+					
+					var monitor:ActivityMonitor = new ActivityMonitor();
+					SystemBus.systemBus.newMessage(monitor);
+					
+					var quickSettings:QuickSettings = new QuickSettings();
+					SystemBus.systemBus.newMessage(quickSettings);
+					
+					SystemBus.systemBus.newLog("Server connected", MessageLevel.SUCCESSFUL);
+				}
+				catch(e:Error){
+					showRetryWindow();
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function showRetryWindow():void{
+				if(retryWindow)
+					return;
+				
+				retryWindow = new RetryWindow();
+				retryWindow.popOut();
+				
+				retryWindow.retryButton.addEventListener(MouseEvent.CLICK, onRetry, false, 0, true);
+				retryWindow.resetButton.addEventListener(MouseEvent.CLICK, onReset, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onRetry(evt:MouseEvent = null):void{
+				if(retryWindow){
+					retryWindow.close();
+					retryWindow = null;
+				}
+				
+				bootStrap();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onReset(evt:MouseEvent = null):void{
+				if(retryWindow){
+					retryWindow.close();
+					retryWindow = null;
+				}
+				
+				DBController.dbController.resetDB(onResetSuccess, onResetFault);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onResetSuccess(message:String):void{
+				bootStrap();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onResetFault(message:String):void{
+				showRetryWindow();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		
+	</fx:Declarations>
+	
+	<fx:Style source="StrobeCavalier.css"/>
+	
+	<!-- Chrome -->
+	<chrome:Chrome id="chrome" width="100%" height="100%"/>
+
+</s:Application>

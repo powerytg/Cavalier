@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:crescent="library://cavalier/frameworks/crescent" 
+		 xmlns:supportClasses="ui.taskPanel.supportClasses.*" 
+		 height="91" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.crescent.activity.Activity;
+			
+			import mx.collections.ArrayCollection;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var activities:ArrayCollection;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var currentActivity:Activity;
+			
+		]]>
+	</fx:Script>
+	
+	<!-- Background -->
+	<s:BitmapImage source="@Embed('images/Background.png')" left="0" right="0" top="0" bottom="0"
+				   fillMode="repeat"/> 
+	
+	<!-- Task panel -->
+	<s:Scroller id="scroller" left="0" right="0" top="15" bottom="0"
+			 	horizontalScrollPolicy="off" verticalScrollPolicy="off"	>
+		<s:VGroup gap="0">
+			<s:HGroup id="taskGroup" width="{width}" height="{height - 15}"
+					  verticalAlign="middle"
+					  paddingLeft="10" paddingRight="10">
+				
+				<!-- Decorations -->
+				<s:BitmapImage source="@Embed('images/Message.png')"/>
+				<s:Label text="activities" color="#ffffff" fontSize="36"/>
+				
+				<!-- Activity controls -->
+				<s:Spacer width="10"/>
+				<crescent:Button id="hyperVisionButton" icon="@Embed('images/HyperVision.png')" width="40" height="40"/>
+				<crescent:Button id="newActivityButton" icon="@Embed('images/AddActivity.png')" label="Activity"/>
+				<crescent:RedButton id="closeAllButton" label="Close All"/>
+				
+				<!-- Current activities -->
+				<s:Spacer width="10"/>
+				<crescent:List id="activityList" width="100%" height="100%"
+							   dataProvider="{activities}"
+							   itemRenderer="ui.taskPanel.supportClasses.TaskRenderer"
+							   selectedItem="{currentActivity}" 
+							   verticalScrollPolicy="off">
+					<crescent:layout>
+						<s:HorizontalLayout verticalAlign="middle" gap="-10"/>
+					</crescent:layout>
+				</crescent:List> 
+				
+				<!-- Messages -->
+				<supportClasses:MessageButton id="messageButton"/>
+			</s:HGroup> 
+			
+			<!-- Indicators -->
+			<s:HGroup id="indicatorGroup"
+					  width="{width}" height="{height - 15}" /> 
+			
+		</s:VGroup>	
+		
+	</s:Scroller>
+</s:Group>

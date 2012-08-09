@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   xmlns:components="frameworks.cavalier.ui.components.*"
+				   title="notifications" 
+				   icon="@Embed('images/MessageIcon.png')"  >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.messaging.SystemBus;
+			
+			import plugins.dashboard.indicators.ClearAllMessageIndicator;
+			
+			/**
+			 * @private
+			 */
+			private function onClearAllClick():void{
+				var indicator:ClearAllMessageIndicator = new ClearAllMessageIndicator();
+				indicator.show();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<crescent:actions>
+		<crescent:RedButton label="Clear All Notifications" click="onClearAllClick()"/>
+	</crescent:actions>
+	
+	<s:HGroup width="100%" height="100%" gap="30">
+		<components:BadgeSection width="100%"
+									 title="On Going"
+									 numItems="{SystemBus.systemBus.alwaysOnMessages.length}">
+			<crescent:List width="100%"
+						   dataProvider="{SystemBus.systemBus.alwaysOnMessages}"
+						   itemRenderer="frameworks.cavalier.ui.messaging.MessageRenderer"  
+						   />
+		</components:BadgeSection>
+
+		<components:BadgeSection width="100%"
+									title="Notifications"
+									numItems="{SystemBus.systemBus.activeMessages.length}" >
+			<crescent:List width="100%"
+						   dataProvider="{SystemBus.systemBus.activeMessages}"
+						   itemRenderer="frameworks.cavalier.ui.messaging.MessageRenderer" 
+						   />
+			
+		</components:BadgeSection>
+		
+		
+		<components:BadgeSection width="100%"
+									 title="Completed and Logs">
+			<crescent:List width="100%"
+						   dataProvider="{SystemBus.systemBus.inactiveMessages}"
+						   itemRenderer="frameworks.cavalier.ui.messaging.MessageRenderer" 
+						   />
+			
+		</components:BadgeSection>			
+	</s:HGroup>
+	
+</crescent:Activity>

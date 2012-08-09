@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<messaging:IndicatorBase xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						 xmlns:s="library://ns.adobe.com/flex/spark" 
+						 xmlns:messaging="frameworks.cavalier.ui.messaging.*"
+						 xmlns:crescent="library://cavalier/frameworks/crescent" 
+						 width="100%" height="100%" 
+						 currentState="normal" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.DBController;
+			import frameworks.cavalier.app.controllers.TrackingController;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.components.TextWindow;
+			
+			import mx.core.FlexGlobals;
+			
+			private var timer:Timer;
+			
+			/**
+			 * @private
+			 */
+			private function onConfirmClick():void{
+				currentState = "progress";
+				
+				timer = new Timer(1000);
+				timer.start();
+				timer.addEventListener(TimerEvent.TIMER, onTimer);
+				
+				DBController.dbController.resetDB(onSuccess, onFault);
+			}
+
+			/**
+			 * @private
+			 */
+			private function onTimer(evt:TimerEvent):void{
+				if(progressBar && progressBar.value <= 90)
+					progressBar.value += 10;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onCancelClick():void{
+				close();
+			}
+
+			/**
+			 * @private
+			 */
+			private function onSuccess(msg:String):void{
+				if(timer){
+					timer.stop();
+					timer = null;
+				}
+				
+				if(progressBar)
+					progressBar.value = 100;
+				
+				var win:TextWindow = new TextWindow();
+				win.text = "Operation is successful";
+				win.popOut();
+				
+				close();
+				
+				// Reset controllers and database
+				Aggregator.aggregator.reset();
+				FlexGlobals.topLevelApplication.bootStrap();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onFault(msg:String):void{
+				if(timer){
+					timer.stop();
+					timer = null;
+				}
+				
+				if(progressBar)
+					progressBar.value = 0;
+				
+				var win:TextWindow = new TextWindow();
+				win.text = "A fatal error occured";
+				win.popOut();
+				
+				close();
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<messaging:states>
+		<s:State name="normal"/>
+		<s:State name="progress"/>
+	</messaging:states>
+	
+	<s:BitmapImage source="@Embed('images/IndicatorAlertGlow.png')"/>
+	<s:BitmapImage source="@Embed('images/IndicatorAlert.png')"/>
+	
+	<s:HGroup width="100%" height="100%"
+			  paddingLeft="25" paddingRight="25" verticalAlign="middle"
+			  includeIn="normal" >
+		<s:Label fontSize="24" text="Are you sure to reset the database?"/>
+		<s:Spacer width="25"/>
+		<s:HGroup width="100%" horizontalAlign="right" gap="15">
+			<crescent:RedButton id="confirmButton" label="Reset Database" click="onConfirmClick()"/>
+			<crescent:Button id="cancelButton" label="Cancel" click="onCancelClick()"/>
+		</s:HGroup>
+	</s:HGroup>
+	
+	<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle"
+			  paddingLeft="20" paddingRight="20" 
+			  includeIn="progress" gap="15">
+		<s:Label fontSize="24" text="Processing..."/>
+		
+		<crescent:ProgressBar id="progressBar" width="100%"/>
+	</s:HGroup>
+	
+</messaging:IndicatorBase>

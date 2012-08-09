@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:crescent="library://cavalier/frameworks/crescent" 
+		 xmlns:layouts="frameworks.cavalier.ui.activities.layouts.*"
+		 gap="30" >
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.ui.activities.events.ActivityTemplateEvent;
+			
+			/**
+			 * @private
+			 */
+			protected function onConfirmClick(event:MouseEvent):void
+			{
+				var evt:ActivityTemplateEvent = new ActivityTemplateEvent(ActivityTemplateEvent.LAYOUT_CHANGE);
+				evt.selectedLayoutClass = (templateList.selectedItem as LayoutTemplate).templateClass;
+				evt.title = titleTextInput.text;
+				dispatchEvent(evt);
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onCancelClick():void{
+				var evt:ActivityTemplateEvent = new ActivityTemplateEvent(ActivityTemplateEvent.ACTIVITY_DISCARDED);
+				dispatchEvent(evt);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<fx:Metadata>
+		[Event(name="layoutChange", type="frameworks.cavalier.ui.activities.events.ActivityTemplateEvent")]
+		[Event(name="activityDiscarded", type="frameworks.cavalier.ui.activities.events.ActivityTemplateEvent")]
+	</fx:Metadata>
+	
+	<crescent:Section title="Properties" width="30%">
+		<s:VGroup width="100%" paddingTop="25" >
+			<s:HGroup width="100%" verticalAlign="middle">
+				<s:Label fontSize="12" color="#696969" text="Name"/>
+				<crescent:TextInput id="titleTextInput" text="activity" width="100%"/>
+			</s:HGroup>
+			<s:Spacer height="20"/>
+			<crescent:Button id="confirmButton" width="100%" label="Confirm" click="onConfirmClick(event)"/>
+			<crescent:RedButton id="cancelButton" width="100%" label="Discard" click="onCancelClick()"/>				
+		</s:VGroup>
+	</crescent:Section>
+	<crescent:Section title="Choose a layout" width="70%">
+		<crescent:List id="templateList" width="100%" height="100%"
+					   horizontalScrollPolicy="off"
+					   itemRenderer="frameworks.cavalier.ui.activities.supportClasses.ActivityLayoutTileRenderer" 
+					   selectedIndex="0" >
+			<crescent:layout>
+				<s:TileLayout horizontalGap="-50" verticalGap="-50"/> 
+			</crescent:layout>
+			<crescent:dataProvider>
+				<s:ArrayList>
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule1.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template1"/>
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule2.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template2"/>
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule3.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template3"/>
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule4.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template4"/>
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule5.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template5"/>
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule6.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template6" />
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule7.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template7" />
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule8.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template8" />
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule9.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template9" />
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule10.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template10" />
+					<layouts:LayoutTemplate icon="@Embed('images/layouts/Rule11.png')" templateClass="frameworks.cavalier.ui.activities.layouts.Template11" />
+				</s:ArrayList>
+			</crescent:dataProvider>				
+		</crescent:List>
+		
+	</crescent:Section>
+</s:HGroup>

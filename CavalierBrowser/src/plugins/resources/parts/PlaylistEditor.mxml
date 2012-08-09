@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				 xmlns:crescent="library://cavalier/frameworks/crescent" 
+				 canPopOut="true" 
+				 resize="onResize()" 
+				 creationComplete="init()" >
+	<fx:Declarations>
+		<s:HorizontalLayout id="hLayout" gap="30"/>
+		<s:VerticalLayout id="vLayout" gap="30"/>
+		<s:TileLayout id="clipTileLayout"
+					  paddingLeft="8" paddingRight="8" paddingTop="8" paddingBottom="8" />
+		
+		<s:VerticalLayout id="clipListLayout"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.ClipController;
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.events.ChromeEvent;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.Playlist;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.jobs.PlaylistJob;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.activities.managers.ActivityManager;
+			import frameworks.cavalier.ui.parts.events.ClipSelectorEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.binding.utils.ChangeWatcher;
+			
+			import plugins.resources.activities.AddToPlaylistActivity;
+			import plugins.resources.parts.supportClasses.ClipAsListRenderer;
+			import plugins.resources.parts.supportClasses.ClipAsTileRenderer;
+			import plugins.resources.parts.supportClasses.ClipRendererEvent;
+			
+			/**
+			 * @private
+			 */
+			[Embed('images/NoCoverArt.jpg')]
+			[Bindable]
+			private var defaultCoverArt:Class;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var playlist:Playlist;
+			
+			/**
+			 * @private
+			 */
+			private var useGlobalPlaylist:Boolean;
+			
+			/**
+			 * @public
+			 */
+			public var playlistWatcher:ChangeWatcher;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				if(!playlist){
+					useGlobalPlaylist = true;
+					if(!playlistWatcher)
+						playlistWatcher = BindingUtils.bindProperty(this, "playlist", Aggregator.aggregator, "selectedPlaylist", true);
+				}
+				else
+					useGlobalPlaylist = false;
+				
+				clipList.addEventListener(ClipRendererEvent.REMOVE_BUTTON_CLICK, onRemoveClipButtonClick, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+
+				if(useGlobalPlaylist && !playlistWatcher)
+					playlistWatcher = BindingUtils.bindProperty(this, "playlist", Aggregator.aggregator, "selectedPlaylist", true);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				if(useGlobalPlaylist && playlistWatcher){
+					playlistWatcher.unwatch();
+					playlistWatcher = null;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override public function destroy():void{
+				super.destroy();
+				
+				if(useGlobalPlaylist && playlistWatcher){
+					playlistWatcher.unwatch();
+					playlistWatcher = null;
+				}
+				
+				clipList.removeEventListener(ClipRendererEvent.REMOVE_BUTTON_CLICK, onRemoveClipButtonClick);
+				playlist = null;
+			}
+			
+			/**
+			 * @public
+			 */
+			override public function createClone():UIPart{
+				var clone:PlaylistEditor = new PlaylistEditor();
+				return clone;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onResize():void{
+				if(width > height){
+					layoutGroup.layout = hLayout;
+					optionGroup.percentWidth = 35;
+					clipGroup.percentWidth = 65;
+				}
+				else{
+					layoutGroup.layout = vLayout;
+					optionGroup.percentWidth = 100;
+					clipGroup.percentWidth = 100;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onClipListModeClick():void{
+				clipList.itemRenderer = new ClassFactory(ClipAsListRenderer);
+				clipList.layout = clipListLayout;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onClipTileModeClick():void{
+				clipList.itemRenderer = new ClassFactory(ClipAsTileRenderer);
+				clipList.layout = clipTileLayout;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onAddClipButtonClick():void{
+				if(!playlist)
+					return;
+				
+				var clipChooser:AddToPlaylistActivity = new AddToPlaylistActivity();
+				clipChooser.playlist = playlist;
+				ActivityManager.activityManager.addActivityToFront(clipChooser);
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onClipSelectionChange():void{
+				var selectedClip:Clip = clipList.selectedItem as Clip;
+				var event:ClipSelectorEvent = new ClipSelectorEvent(ClipSelectorEvent.CLIP_SELECTION_CHANGE);
+				event.selectedItem = selectedClip;
+				
+				Aggregator.aggregator.selectedClip = selectedClip;
+				Aggregator.aggregator.dispatchEvent(event);
+				
+				// The next thing to do is to update the details for the selected playlist
+				ClipController.clipController.getClip(selectedClip);
+				
+				// Notify change of background image (optional)
+				var backgroundEvent:ChromeEvent = new ChromeEvent(ChromeEvent.CHANGE_BACKGROUND, true);
+				if(selectedClip.previewUrl)
+					backgroundEvent.backgroundFace = selectedClip.previewUrl;
+				else
+					backgroundEvent.backgroundFace = defaultCoverArt;
+				
+				dispatchEvent(backgroundEvent);					
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onNameInputChange():void{
+				if(!playlist)
+					return;
+				
+				// Create an update job
+				var job:PlaylistJob = new PlaylistJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = playlist;
+				JobController.jobController.submitJob(job);
+				
+				playlist.name = nameInput.text;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onDeleteClick():void{
+				var job:PlaylistJob = new PlaylistJob();
+				job.action = CRUDAction.DELETE;
+				job.payload = playlist;
+				JobController.jobController.submitJob(job);
+				
+				playlist = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onRemoveClipButtonClick(evt:ClipRendererEvent):void{
+				if(!playlist)
+					return;
+				
+				// Create an update job
+				var job:PlaylistJob = new PlaylistJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = playlist;
+				JobController.jobController.submitJob(job);
+				
+				// Remove clip from playlist
+				if(playlist.clips.contains(evt.clip))
+					playlist.clips.removeItemAt(playlist.clips.getItemIndex(evt.clip));
+				
+				playlist.name = nameInput.text;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onClearAllButtonClick():void{
+				if(!playlist)
+					return;
+				
+				// Create an update job
+				var job:PlaylistJob = new PlaylistJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = playlist;
+				JobController.jobController.submitJob(job);
+				
+				// Remove all clips from playlist
+				playlist.clips.removeAll();
+			}			
+			/**
+			 * @private
+			 */
+			private function onCommitButtonClick():void{
+				JobController.jobController.commit();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<cavalier:states>
+		<s:State name="noData"/>
+		<s:State name="normal"/>
+	</cavalier:states>
+	
+	<!-- Content -->
+	<s:Scroller width="{width - 60}" height="100%" horizontalScrollPolicy="off">
+		<s:Group id="layoutGroup" 
+				 width="100%" 
+				 layout="{hLayout}"
+				 visible="{playlist!= null}" >
+			<s:VGroup id="optionGroup" width="100%" horizontalAlign="right">
+				<!-- Options -->
+				<crescent:Section title="Resource" width="100%">
+					<s:HGroup width="100%" paddingTop="15" paddingBottom="15"
+							  verticalAlign="middle" >
+						<s:Label text="Playlist ID" width="100%"/>
+						<crescent:SocketGroup width="200" height="50">
+							<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="15">
+								<s:Label fontSize="14" color="#cacaca" text="{playlist.id}" width="40%" textAlign="center"/>
+								<crescent:RoundedOrangeButton label="Delete" width="100%" height="100%" click="onDeleteClick()"/>
+							</s:HGroup>			
+						</crescent:SocketGroup>									
+					</s:HGroup>
+				</crescent:Section>
+				
+				<crescent:Section title="Options" width="100%">
+					<s:VGroup width="100%" paddingTop="15" paddingBottom="15">
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="Name" width="40%" textAlign="right"/>
+							<crescent:TextInput id="nameInput" width="100%" text="{playlist.name}" change="onNameInputChange()"/>								
+						</s:HGroup>				
+						
+						<s:HGroup width="100%" verticalAlign="middle">
+							<s:Label fontSize="14" color="#cacaca" text="Creation Date" width="40%" textAlign="right"/>
+							<crescent:TextInput width="100%" text="{playlist.creationDate}" editable="false"/>								
+						</s:HGroup>				
+
+						<s:Spacer height="15"/>
+						<crescent:Button label="Add More Clips" width="100%" click="onAddClipButtonClick()"/>
+						
+						<s:Spacer height="15"/>
+						<crescent:Button label="Commit Changes" width="100%" click="onCommitButtonClick()"/>
+						<crescent:RedButton label="Delete This Playlist" width="100%" click="onDeleteClick()"/>
+					</s:VGroup>
+				</crescent:Section>
+			</s:VGroup>
+			
+			<!-- Clip List -->
+			<crescent:Section id="clipGroup" title="Clips" width="100%">
+				<crescent:actions>
+					<crescent:RedButton height="40" label="Clear All" click="onClearAllButtonClick()"/>
+					<crescent:Button width="40" height="40" icon="@Embed('plugins/resources/parts/images/AsList.png')" click="onClipListModeClick()"/>
+					<crescent:Button width="40" height="40" icon="@Embed('plugins/resources/parts/images/AsTile.png')" click="onClipTileModeClick()"/>					
+				</crescent:actions>
+				<crescent:List id="clipList" width="100%"
+							   dataProvider="{playlist.clips}"
+							   itemRenderer="plugins.resources.parts.supportClasses.ClipInPlaylistRenderer" 
+							   horizontalScrollPolicy="off"
+							   verticalScrollPolicy="off"
+							   change="onClipSelectionChange()" 
+							   />
+			</crescent:Section>		
+		</s:Group>		
+	</s:Scroller>
+
+	<!-- When no selection has been made -->
+	<s:Group width="100%" height="100%" visible="{playlist == null}">
+		<crescent:SocketGroup width="250" horizontalCenter="0" verticalCenter="0">
+			<s:Label text="No Playlist Selected" fontSize="18" color="#ffffff"
+					 horizontalCenter="0" verticalCenter="0" />
+		</crescent:SocketGroup>
+	</s:Group>
+	
+	<cavalier:PopOutButton right="0" top="-5" visible="{canPopOut}" click="popOut()"/>
+</cavalier:UIPart>

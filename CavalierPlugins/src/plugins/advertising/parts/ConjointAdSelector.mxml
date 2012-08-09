@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier" 
+				 xmlns:crescent="library://cavalier/frameworks/crescent" 
+				 creationComplete="init()" xmlns:parts="plugins.advertising.parts.*" xmlns:parts1="plugins.resources.parts.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.ui.parts.events.CalendarEvent;
+			
+			/**
+			 * @private
+			 */
+			protected function init():void{
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onBackButtonClick():void{
+				currentState = "selectTag";
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onQueryTermChange():void{
+				currentState = "selectAd";
+			}
+		]]>
+	</fx:Script>
+	
+	<cavalier:states>
+		<s:State name="selectTag"/>
+		<s:State name="selectAd"/>
+	</cavalier:states>
+	
+	<cavalier:transitions>
+		<s:Transition toState="selectAd">
+			<s:Sequence>
+				<s:SetAction target="{adGroup}" property="visible"/>
+				<s:Animate target="{layoutGroup}">
+					<s:SimpleMotionPath property="horizontalScrollPosition"/>
+				</s:Animate>
+				<s:SetAction target="{tagSelector}" property="visible"/> 						
+			</s:Sequence>
+		</s:Transition>
+		
+		<s:Transition toState="selectTag">
+			<s:Sequence>
+				<s:SetAction target="{tagSelector}" property="visible"/>
+				<s:Animate target="{layoutGroup}">
+					<s:SimpleMotionPath property="horizontalScrollPosition"/>
+				</s:Animate>
+				<s:SetAction target="{adGroup}" property="visible"/> 						
+			</s:Sequence>
+		</s:Transition>
+	</cavalier:transitions>
+	
+	<s:Scroller id="scroller" width="100%" height="100%"
+				horizontalScrollPolicy="off" verticalScrollPolicy="off"	>
+		<s:HGroup id="layoutGroup" gap="0"
+				  horizontalScrollPosition="0" horizontalScrollPosition.selectAd="{width}">
+			<parts1:TagListWithAdBadge id="tagSelector" width="{width}" height="{height}" 
+											  tagSelectionChange="onQueryTermChange()"
+		   									  visible.selectAd="false" />
+			
+			<s:VGroup id="adGroup" width="{width}" height="{height}" gap="15"
+					  visible.selectTag="false" >
+				<crescent:Button id="backButton" label="Back" width="100%" click="onBackButtonClick()"/>
+				<parts:AdSelector id="adSelector" width="100%" height="100%"/>
+				
+			</s:VGroup>
+		</s:HGroup>
+	</s:Scroller>
+	
+</cavalier:UIPart>

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				   title="assign tags"
+				   icon="@Embed('images/ManageTagsActivityIcon.png')" 
+				   creationComplete="init()" >
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.Tag;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.jobs.ClipJob;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.CollectionEvent;
+			import mx.events.ItemClickEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var clip:Clip;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var selectedTags:Vector.<Object>;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var allTags:ArrayCollection;
+			
+			/**
+			 * @private
+			 *
+			 */
+			private function init():void{
+				allTags = Aggregator.aggregator.tags;
+				clip.tags.addEventListener(CollectionEvent.COLLECTION_CHANGE, onTagCollection);
+				selectedTags = Vector.<Object>(clip.tags.toArray());
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTagCollection(evt:CollectionEvent):void{
+				selectedTags = Vector.<Object>(clip.tags.toArray());
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onConfirmClick():void{
+				JobController.jobController.commit();
+				close();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onCancelClick():void{
+				// Find the job and revert it
+				var job:ClipJob = JobController.jobController.findJobByPayload(clip) as ClipJob;
+				if(job)
+					JobController.jobController.cancelJob(job);
+				
+				close();
+			}			
+			
+			/**
+			 * @private
+			 */
+			private function onTagChange(evt:IndexChangeEvent):void{
+				var job:ClipJob = new ClipJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = clip;
+				JobController.jobController.submitJob(job);
+				
+				// Update tags
+				if(evt.newIndex != -1){
+					var tag:Tag = tagList.dataProvider.getItemAt(evt.newIndex) as Tag;
+					if(clip.tags.contains(tag)){
+						clip.tags.removeItemAt(clip.tags.getItemIndex(tag));
+					}
+					else{
+						clip.tags.addItem(tag);
+					}					
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onHashtagChange():void{
+				var job:ClipJob = new ClipJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = clip;
+				JobController.jobController.submitJob(job);
+				
+				// Update hashtags
+				var hashtag:String = hashtagList.selectedItem as String;
+				clip.hashtags.removeItemAt(clip.hashtags.getItemIndex(hashtag));
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onHashtagInputKeyDown(evt:KeyboardEvent):void{
+				if(evt.keyCode == Keyboard.ENTER){
+					if(hashtagInput.text != ""){
+						var hashtag:String = hashtagInput.text;
+						if(hashtag.charAt(0) != "#")
+							hashtag = "#" + hashtag;
+						
+						if(!clip.hashtags.contains(hashtag)){
+							var job:ClipJob = new ClipJob();
+							job.action = CRUDAction.UPDATE;
+							job.payload = clip;
+							JobController.jobController.submitJob(job);
+
+							clip.hashtags.addItem(hashtag);
+						}
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" height="100%" gap="15">
+		<!-- Options -->
+		<crescent:Section title="Options" width="170">
+			<s:VGroup width="100%" paddingTop="25" gap="10">
+				<cavalier:Preview source="{clip.previewUrl}" width="170" height="100"/>
+				<s:Label color="#696969" width="100%"
+						 text="Add tags or hashtags to this clip. A hashtag should begin with the # symbol."/> 
+				<s:Spacer height="15"/>
+				<crescent:Button label="Confirm" width="100%" click="onConfirmClick()"/>
+				<crescent:RedButton label="Cancel" width="100%" click="onCancelClick()"/>					
+			</s:VGroup>
+		</crescent:Section>
+		
+		<!-- Tag list -->
+		<s:HGroup width="100%" height="100%">
+			<crescent:Section title="Twitter Hashtags" width="100%" height="100%">
+				<s:VGroup width="100%" height="100%" paddingTop="25" gap="10">
+					<crescent:TextInput id="hashtagInput" width="100%" prompt="Type to add hashtag" keyDown="onHashtagInputKeyDown(event)"/>
+					<crescent:List id="hashtagList" width="100%" height="100%"
+								   dataProvider="{clip.hashtags}"
+								   itemRenderer="plugins.resources.parts.supportClasses.TagRenderer"
+								   change="onHashtagChange()" >
+						<crescent:layout>
+							<s:VerticalLayout/>
+						</crescent:layout>
+
+					</crescent:List> 
+				</s:VGroup>
+			</crescent:Section>
+			
+			<crescent:Section title="Tags" width="100%" height="100%">
+				<s:VGroup width="100%" height="100%" paddingTop="25" gap="10">
+					<crescent:List id="tagList" width="100%" height="100%"
+								   dataProvider="{allTags}"
+								   itemRenderer="plugins.resources.parts.supportClasses.TagRenderer"
+								   allowMultipleSelection="true"
+								   selectedItems="{selectedTags}" 
+								   change="onTagChange(event)" >
+						<crescent:layout>
+							<s:VerticalLayout/>
+						</crescent:layout>
+					</crescent:List> 
+				</s:VGroup>
+			</crescent:Section>
+		</s:HGroup>
+		
+	</s:HGroup>
+	
+</crescent:Activity>

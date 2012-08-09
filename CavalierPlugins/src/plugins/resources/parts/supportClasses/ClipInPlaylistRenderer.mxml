@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:crescent="library://cavalier/frameworks/crescent"
+				xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				height="90" width="100%" 
+				autoDrawBackground="false" 	>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.ui.activities.managers.ActivityManager;
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				graphics.clear();
+				graphics.lineStyle(1, 0x959595);
+				graphics.moveTo(0, unscaledHeight);
+				graphics.lineTo(unscaledWidth, unscaledHeight);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onRemoveClick():void{
+				var evt:ClipRendererEvent = new ClipRendererEvent(ClipRendererEvent.REMOVE_BUTTON_CLICK, true);
+				evt.clip = data as Clip;
+				dispatchEvent(evt);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onClipPropertyClick():void{
+				ActivityManager.activityManager.lookAtOrCreateNewByClassName("ClipEditorActivity");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<s:transitions>
+		<s:Transition>
+			<s:Animate target="{layoutGroup}">
+				<s:SimpleMotionPath property="paddingLeft"/>
+			</s:Animate>
+		</s:Transition>
+	</s:transitions>
+	
+	<crescent:DefaultItemRendererBackground width="100%" height="100%"
+										 	alpha.normal="0" alpha.selected="1"/>
+	
+	<s:HGroup id="layoutGroup" 
+			  width="100%" height="100%"
+			  verticalAlign="middle"
+			  paddingLeft="10"
+			  paddingLeft.selected="26">
+		
+		<cavalier:Preview source="{data.previewUrl}"/>
+		
+		<s:VGroup width="100%">
+			<s:Label text="{data.name}" fontSize="24">
+				<s:filters.selected>
+					<s:GlowFilter color="#005e65" blurX="4" blurY="4" strength="3"/>
+				</s:filters.selected>
+			</s:Label>
+			<s:Label fontSize="14" color="#696969" text="{data.duration}"/>			
+		</s:VGroup>
+		
+		<!-- Property button -->
+		<crescent:Button label="Properties" click="onClipPropertyClick()"/>
+		
+		<!-- Remove button -->
+		<crescent:OrangeCircularButton icon="@Embed('plugins/resources/parts/images/Remove.png')" click="onRemoveClick()"/>
+	</s:HGroup> 
+	
+</s:ItemRenderer>

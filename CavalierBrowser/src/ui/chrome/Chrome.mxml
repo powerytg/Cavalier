@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:crescent="library://cavalier/frameworks/crescent"
+		xmlns:cavalier="library://cavalier/frameworks/cavalier"
+		xmlns:chrome="ui.chrome.*" 
+		xmlns:sidePanel="ui.sidePanel.*" 
+		xmlns:taskPanel="ui.taskPanel.*" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!-- Main content -->
+	<s:Group id="contentGroup" width="100%" height="100%">
+		<!-- Background -->
+		<chrome:Background id="background" width="100%" height="100%"/>
+		
+		<s:BitmapImage id="logo" left="0" top="0"  source="@Embed('images/Logo.png')"/>
+		
+		<!-- Top right, login area -->
+		<s:HGroup id="titleGroup" right="10" top="10" horizontalAlign="right">
+			<s:VGroup horizontalAlign="right">
+				<s:Label fontSize="14" color="#555555" text="This is a beta-ware! Product may explode or cause a black hole"/>
+				<s:Label fontSize="14" color="#25aae1" text="2.0 nightly, 2011 Adobe Systems"/>
+			</s:VGroup>
+			<crescent:Button id="fullScreenButton" label="Full Screen" width="95"/>
+		</s:HGroup>
+		
+		<!-- Side bar -->
+		<sidePanel:SidePanel id="sidePanel" left="0" top="90" bottom="80" width="300"/>
+		
+		<!-- Activity deck -->
+		<crescent:ActivityDeck id="activityDeck"
+							   left="315" right="0" top="90" bottom="140">
+		</crescent:ActivityDeck>
+		
+		<!-- Activity slider -->
+		<s:Group id="pagerGroup" left="315" right="0" width="500" bottom="95">
+			<cavalier:PagerSlider id="pagerSlider"
+								  width="500" horizontalCenter="0" verticalCenter="0" 
+								  minimum="0" maximum="100"
+								  numPages="{activityDeck.activities.length}" 
+								  showDataTip="false"
+								  visible="{activityDeck.activities.length > 1}" />
+
+			<s:HGroup verticalCenter="0" right="20">
+				<crescent:CircularButton id="previousButton" icon="@Embed('images/PreviousActivity.png')"/>
+				<crescent:CircularButton id="nextButton" icon="@Embed('images/NextActivity.png')"/>
+			</s:HGroup>
+		</s:Group>
+		
+		<!-- Task bar -->
+		<taskPanel:TaskPanel id="taskPanel" left="0" right="0" bottom="0"
+							 activities="{activityDeck.activities}"
+							 currentActivity="{activityDeck.currentActivity}"  />		
+	</s:Group>
+
+	<!-- Message panel. The content of this group is only created when necessary -->
+	<s:Group id="messagePanelHolder"
+			 width="0" height="100%"
+			 right="-280" 
+			 visible="false">
+		
+		<!-- Only visible when loading the message panel -->
+		<crescent:SocketGroup width="200" height="45"
+							  horizontalCenter="0" verticalCenter="0">
+			<s:Label horizontalCenter="0" verticalCenter="0" text="Initializing..."/>
+		</crescent:SocketGroup> 
+		
+	</s:Group>
+
+</s:Group>

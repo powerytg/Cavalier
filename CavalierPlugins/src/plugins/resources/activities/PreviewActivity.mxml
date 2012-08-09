@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   title="video preview"
+				   icon="@Embed('images/PreviewActivityIcon.png')" 
+				   creationComplete="init()" xmlns:parts="plugins.resources.parts.*" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.plugin.managers.UIPartManager;
+			import frameworks.cavalier.ui.parts.UIPart;
+			
+			private function init():void{
+				var info:UIPart = UIPartManager.uiPartManager.requestUIPartByClassName("plugins.videoMetrics.parts.OSMFInfoWidget");
+				if(info){
+					info.percentWidth = 100;
+					info.percentHeight = 100;
+					analysisGroup.addElement(info);
+				}
+				
+				var bitrate:UIPart = UIPartManager.uiPartManager.requestUIPartByClassName("plugins.videoMetrics.parts.BitrateChartWidget");
+				if(bitrate){
+					bitrate.percentWidth = 100;
+					bitrate.percentHeight = 100;
+					analysisGroup.addElement(bitrate);
+				}
+				
+				var framerate:UIPart = UIPartManager.uiPartManager.requestUIPartByClassName("plugins.videoMetrics.parts.FramerateChartWidget");
+				if(framerate){
+					framerate.percentWidth = 100;
+					framerate.percentHeight = 100;
+					analysisGroup.addElement(framerate);
+				}
+
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" height="100%">
+		<parts:VideoPreview width="100%" height="100%"/>
+		<s:HGroup id="analysisGroup" width="100%" height="150"/>
+	</s:VGroup>
+	
+</crescent:Activity>

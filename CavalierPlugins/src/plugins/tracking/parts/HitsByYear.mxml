@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<parts:StatisticUIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:parts="frameworks.cavalier.ui.parts.*" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:crescent="library://cavalier/frameworks/crescent"
+					   creationComplete="init()"  >
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.TrackingController;
+			import frameworks.cavalier.app.models.IAnalysisModel;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.app.utils.DateUtil;
+			import frameworks.cavalier.ui.parts.events.AdSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.ClipSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.PlaylistSelectorEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.charts.chartClasses.IAxis;
+			import mx.collections.ArrayCollection;
+			import mx.events.EffectEvent;
+			import mx.events.ItemClickEvent;
+			
+			import spark.effects.Animate;
+			import spark.effects.animation.MotionPath;
+			import spark.effects.animation.SimpleMotionPath;
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var year:Number = new Date().fullYear;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var years:ArrayCollection = new ArrayCollection();
+						
+			/**
+			 * @public
+			 */
+			public var affectedByGlobalSelectors:Boolean = true;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var resource:IAnalysisModel;
+
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var stat:ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				// Setting up the selectable years
+				for(var i:uint = year - 5; i <= year; i++){
+					years.addItem(i);
+				}
+				
+				yearSelector.addEventListener(ItemClickEvent.ITEM_CLICK, onYearSelected);
+
+				localMessageBus.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange, false, 0, true);
+				localMessageBus.addEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange, false, 0, true);
+				localMessageBus.addEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange, false, 0, true);
+				
+				if(affectedByGlobalSelectors){
+					Aggregator.aggregator.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					Aggregator.aggregator.addEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					Aggregator.aggregator.addEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					
+					resource = Aggregator.aggregator.lastSelectedAnalysisResource;
+					
+					if(resource)
+						onResourceChange();
+					
+				}	
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				if(affectedByGlobalSelectors){
+					Aggregator.aggregator.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					Aggregator.aggregator.addEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					Aggregator.aggregator.addEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange, false, 0, true);
+					
+				}
+				
+				if(resource != Aggregator.aggregator.lastSelectedAnalysisResource){
+					resource = Aggregator.aggregator.lastSelectedAnalysisResource;
+					onResourceChange();
+				}				
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDestroy(evt:ActivityContainerEvent):void{
+				localMessageBus.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange);
+				localMessageBus.removeEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange);
+				localMessageBus.removeEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange);
+				
+				Aggregator.aggregator.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange);
+				Aggregator.aggregator.removeEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange);
+				Aggregator.aggregator.removeEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange);
+				resource = null;
+				
+				super.onDestroy(evt);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				Aggregator.aggregator.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onResourceChange);
+				Aggregator.aggregator.removeEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onResourceChange);
+				Aggregator.aggregator.removeEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onResourceChange);
+				
+				resource = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onResourceChange(evt:Event = null):void{
+				if(evt)
+					resource = evt["selectedItem"];
+				else
+					resource = Aggregator.aggregator.lastSelectedAnalysisResource;
+				
+				if(resource)
+					TrackingController.trackingController.analysisHitsByYear(resource, year, onDataReceived);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onDataReceived(result:ArrayCollection):void{
+				stat = result;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function labelGenerator(labelValue:Object, previousValue:Object = null, axis:IAxis = null, labelItem:Object = null):String{
+				var month:Number = Number(labelValue);
+				var monthName:String = DateUtil.monthNames[month];
+				return monthName.substr(0, 3);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onYearButtonClick():void{
+				yearSelector.selectedIndex = years.getItemIndex(year);
+				var mp:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition");
+				mp.valueTo = width;
+				var animate:Animate = new Animate(scroller.viewport);
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				animate.play();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onYearSelected(evt:ItemClickEvent):void{
+				evt.stopPropagation();
+				var mp:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition");
+				mp.valueTo = 0;
+				var animate:Animate = new Animate(scroller.viewport);
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				animate.play();
+				animate.addEventListener(EffectEvent.EFFECT_END, function(evt:EffectEvent):void{
+					if(year != (yearSelector.selectedItem as Number)){
+						year = yearSelector.selectedItem as Number;
+						onResourceChange();
+					}
+				}, false, 0, true);
+			}
+			
+			/**
+			 * @public
+			 */
+			public function clear():void{
+				if(stat)
+					stat.removeAll();
+			}
+			
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:SolidColorStroke id="stroke" color="{resource.graphColor}"/>
+		<s:LinearGradient id="fill" rotation="90">
+			<s:GradientEntry color="{resource.graphColor}" alpha="0.3"/>
+			<s:GradientEntry color="{resource.graphColor}" alpha="0"/>
+		</s:LinearGradient>							
+	</fx:Declarations>
+	
+	
+	<s:Scroller id="scroller" width="100%" height="100%" horizontalScrollPolicy="off" verticalScrollPolicy="off"
+				visible="{resource != null}" >
+		<s:HGroup gap="0">
+			<!-- Normal group -->
+			<s:Group id="normalGroup" width="{width}" height="{width}">
+				<mx:AreaChart  id="chart" width="100%" height="{height}" 
+							   dataProvider="{stat}" >
+					<mx:series>
+						<mx:AreaSeries xField="label" yField="value" areaFill="{fill}" areaStroke="{stroke}" form="curve" />
+					</mx:series>
+					
+					<mx:verticalAxis>
+						<!--
+						<mx:CategoryAxis id="vaxis" dataProvider="{stat}" categoryField="value"/>
+						-->
+						<mx:LinearAxis id="vaxis"/>
+					</mx:verticalAxis>
+					
+					<mx:verticalAxisRenderers>
+						<mx:AxisRenderer axis="{vaxis}" showLabels="true" showLine="false" visible="false" tickLength="0"/>
+					</mx:verticalAxisRenderers>
+					
+					<mx:horizontalAxis>
+						<mx:CategoryAxis id="haxis" dataProvider="{stat}" categoryField="label"  labelFunction="labelGenerator"/>
+					</mx:horizontalAxis>
+					
+					<mx:horizontalAxisRenderers>
+						<mx:AxisRenderer axis="{haxis}"/>
+					</mx:horizontalAxisRenderers>
+					
+					<mx:backgroundElements>
+						<mx:GridLines visible="false"/>
+					</mx:backgroundElements>
+					
+				</mx:AreaChart>
+				
+				<s:HGroup top="0" verticalAlign="middle">
+					<s:Label fontSize="12" color="#9c9c9c" text="Showing Year"/>
+					<crescent:Button id="yearButton" width="90" label="{year}" click="onYearButtonClick()"/>
+				</s:HGroup>
+			</s:Group>
+			
+			<!-- Year selector -->
+			<crescent:List id="yearSelector" width="{width}" height="{height}"
+						   dataProvider="{years}"
+						   itemRenderer="plugins.tracking.parts.supportClasses.YearListRenderer" /> 
+		</s:HGroup>
+	</s:Scroller>
+
+	<!-- If no clip selected -->
+	<s:Group id="infoGroup" width="100%" height="100%" visible="{resource == null}">
+		<crescent:SocketGroup width="250" horizontalCenter="0" verticalCenter="0">
+			<s:Label id="infoLabel" text="No Resource Selected" fontSize="18" color="#ffffff"
+					 horizontalCenter="0" verticalCenter="0" />
+		</crescent:SocketGroup>
+	</s:Group>
+	
+</parts:StatisticUIPart>

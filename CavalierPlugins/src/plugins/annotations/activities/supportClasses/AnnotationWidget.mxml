@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 mouseDown="onBackgroundMouseDown(event)" xmlns:supportClasses="plugins.annotations.activities.supportClasses.*" >
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.utils.TimeUtil;
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import plugins.annotations.activities.events.AnnotationWidgetEvent;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.jobs.AnnotationJob;
+			import frameworks.cavalier.app.models.Annotation;
+			
+			import mx.managers.FocusManager;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var annotation:Annotation;
+			
+			/**
+			 * @private
+			 */
+			private var mouseOrigin:Point;
+			
+			/**
+			 * @private
+			 */
+			private var previousPosition:Point;
+			
+			/**
+			 * @private
+			 */
+			private var previousSize:Point;
+			
+			/**
+			 * @private
+			 */
+			private var updateThreshold:Number = 10;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var titleHeight:Number = 38;
+			
+			/**
+			 * @public
+			 */
+			public var radius:Number = 24;
+			
+			/**
+			 * @public
+			 */
+			public var locked:Boolean = false;
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				var g:Graphics = backgroundGroup.graphics; 
+				g.clear();
+				g.lineStyle(1, annotation.color);
+				g.beginFill(annotation.color, 0.15);
+				g.drawRoundRectComplex(0, 0, unscaledWidth, unscaledHeight, radius, radius, radius, 0);
+				g.endFill();
+				
+				// Draw a title bar
+				g.beginFill(annotation.color, 0.5);
+				g.drawRoundRectComplex(0, 0, unscaledWidth, titleHeight, radius, radius, 0, 0);
+				g.endFill();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onKeyDown(evt:KeyboardEvent):void{
+				var contentChanged:Boolean = false;
+				if(evt.keyCode == Keyboard.ENTER){
+					// End input
+					contentChanged = (annotation.content == contentInput.text);
+					annotation.content = contentInput.text;
+					contentInput.visible = false;
+					contentLabel.visible = true;
+				}
+				
+				if(contentChanged){
+					var event:AnnotationWidgetEvent = new AnnotationWidgetEvent(AnnotationWidgetEvent.ANNOTATION_CHANGED, true);
+					event.widget = this;
+					dispatchEvent(event);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onEditClick(evt:MouseEvent):void{
+				evt.stopPropagation();
+				
+				contentLabel.visible = false;
+				contentInput.visible = true;
+				contentInput.setFocus();
+				
+				locked = true;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTitleMouseDown(evt:MouseEvent):void{
+				evt.stopPropagation();
+				mouseOrigin = new Point(evt.localX, evt.localY);
+				previousPosition = new Point(x, y);
+				
+				// Initial dragging of marker
+				stage.addEventListener(MouseEvent.MOUSE_MOVE, onTitleMouseMove, false, 0, true);
+				stage.addEventListener(MouseEvent.MOUSE_UP, onTitleMouseUp, false, 0, true);
+				
+				locked = true;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTitleMouseMove(evt:MouseEvent):void{
+				var offset:Point = parent.globalToLocal(new Point(evt.stageX, evt.stageY));
+				
+				this.x = offset.x - mouseOrigin.x;
+				this.y = offset.y - mouseOrigin.y;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTitleMouseUp(evt:MouseEvent):void{
+				stage.removeEventListener(MouseEvent.MOUSE_MOVE, onTitleMouseMove);
+				stage.removeEventListener(MouseEvent.MOUSE_UP, onTitleMouseUp);
+				
+				locked = false;
+				
+				if(Math.abs(x - previousPosition.x) > updateThreshold || Math.abs(y - previousPosition.y) > updateThreshold){
+					var event:AnnotationWidgetEvent = new AnnotationWidgetEvent(AnnotationWidgetEvent.ANNOTATION_CHANGED, true);
+					event.widget = this;
+					dispatchEvent(event);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onHandleMouseDown(evt:MouseEvent):void{
+				evt.stopPropagation();
+				mouseOrigin = new Point(evt.localX, evt.localY);
+				
+				// Initial dragging of marker
+				stage.addEventListener(MouseEvent.MOUSE_MOVE, onHandleMouseMove, false, 0, true);
+				stage.addEventListener(MouseEvent.MOUSE_UP, onHandleMouseUp, false, 0, true);
+				
+				locked = true;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onHandleMouseMove(evt:MouseEvent):void{
+				var offset:Point = parent.globalToLocal(new Point(evt.stageX, evt.stageY));
+				
+				this.x = offset.x - mouseOrigin.x + dragHandle.width;
+				this.y = offset.y - mouseOrigin.y - dragHandle.height / 2;
+				
+				locked = true;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onHandleMouseUp(evt:MouseEvent):void{
+				stage.removeEventListener(MouseEvent.MOUSE_MOVE, onHandleMouseMove);
+				stage.removeEventListener(MouseEvent.MOUSE_UP, onHandleMouseUp);
+				
+				locked = false;
+				
+				if(Math.abs(x - previousPosition.x) > updateThreshold || Math.abs(y - previousPosition.y) > updateThreshold){
+					var event:AnnotationWidgetEvent = new AnnotationWidgetEvent(AnnotationWidgetEvent.ANNOTATION_CHANGED, true);
+					event.widget = this;
+					dispatchEvent(event);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onResizerMouseDown(evt:MouseEvent):void{
+				evt.stopPropagation();
+				
+				mouseOrigin = new Point(evt.localX, evt.localY);
+				previousSize = new Point(width, height);
+				
+				// Initial dragging of marker
+				stage.addEventListener(MouseEvent.MOUSE_MOVE, onResizerMouseMove, false, 0, true);
+				stage.addEventListener(MouseEvent.MOUSE_UP, onResizerMouseUp, false, 0, true);
+				
+				locked = true;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onResizerMouseMove(evt:MouseEvent):void{
+				var offset:Point = parent.globalToLocal(new Point(evt.stageX, evt.stageY));
+				this.width = Math.max(50, offset.x - this.x + mouseOrigin.x);
+				this.height = Math.max(50, offset.y - this.y + mouseOrigin.y);				
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onResizerMouseUp(evt:MouseEvent):void{
+				stage.removeEventListener(MouseEvent.MOUSE_MOVE, onResizerMouseMove);
+				stage.removeEventListener(MouseEvent.MOUSE_UP, onResizerMouseUp);
+				
+				locked = false;
+				
+				if(Math.abs(width - previousSize.x) > updateThreshold || Math.abs(height - previousSize.y) > updateThreshold){
+					var event:AnnotationWidgetEvent = new AnnotationWidgetEvent(AnnotationWidgetEvent.ANNOTATION_CHANGED, true);
+					event.widget = this;
+					dispatchEvent(event);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onBackgroundMouseDown(evt:MouseEvent):void{
+				evt.stopPropagation();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<!-- Drag handle -->
+	<supportClasses:DragHandle id="dragHandle" left="{-dragHandle.width}" top="{titleHeight - dragHandle.height / 2}" faceColor="{annotation.color}"
+							   mouseDown="onHandleMouseDown(event)" />
+	
+	<!-- Background -->
+	<s:Group id="backgroundGroup" left="0" right="0" top="0" bottom="0"/>
+	
+	<!-- Title -->
+	<s:Group id="titleGroup" left="0" right="0" top="0" height="{titleHeight}" mouseDown="onTitleMouseDown(event)"/>
+	
+	<!-- Edit button -->
+	<s:Image id="editButton" source="@Embed('images/EditIcon.png')" right="7" top="4" click="onEditClick(event)"/>
+	
+	<!-- Text -->
+	<s:Label id="contentLabel"
+			 left="12" right="12" top="{titleHeight + 12}" bottom="12" text="{annotation.content}"
+			 click="onEditClick(event)" />
+	
+	<!-- Time code -->
+	<s:HGroup top="15" left="15" gap="8" mouseChildren="false" mouseEnabled="false">
+		<s:Label fontSize="18" fontWeight="bold" text="{TimeUtil.getTimeCode(annotation.cuePoint)}" color="#ffffff"/>
+		<s:Label fontSize="18" fontWeight="bold" text="-" color="#ffffff"/>
+		<s:Label fontSize="18" fontWeight="bold" text="{TimeUtil.getTimeCode(annotation.cuePoint + annotation.duration)}" color="#ffffff"/>
+	</s:HGroup>
+	
+	<!-- Input box -->
+	<s:TextInput id="contentInput" left="12" right="12" top="{titleHeight + 12}" bottom="12" visible="false"
+				 keyDown="onKeyDown(event)" />
+	
+	<!-- Resizer -->
+	<supportClasses:WidgetResizer id="resizer" right="4" bottom="4" 
+								  faceColor="{annotation.color}"
+								  mouseDown="onResizerMouseDown(event)" />
+</s:Group>

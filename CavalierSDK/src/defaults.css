@@ -1,0 +1,27 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace cavalier "library://cavalier/frameworks/cavalier";
+
+cavalier|ActionTile{
+	skinClass: ClassReference('frameworks.cavalier.ui.components.skins.ActionTileSkin');
+}
+
+cavalier|InfoTile{
+	skinClass: ClassReference('frameworks.cavalier.ui.components.skins.InfoTileSkin');
+}
+
+cavalier|Preview{
+	skinClass: ClassReference('frameworks.cavalier.ui.components.skins.PreviewSkin');
+}
+
+cavalier|PopOutButton{
+	skinClass: ClassReference('frameworks.cavalier.ui.components.skins.PopOutButtonSkin');
+}
+
+cavalier|PagerSlider{
+	skinClass: ClassReference('frameworks.cavalier.ui.components.skins.PagerSliderSkin');
+}
+
+cavalier|UIPart{
+	skinClass: ClassReference('frameworks.cavalier.ui.parts.skins.UIPartSkin');
+}

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   xmlns:parts="plugins.advertising.parts.*"
+				   xmlns:resourceParts="plugins.resources.parts.*" 
+				   title="browse ads"
+				   icon="@Embed('supportClasses/images/AdIcon.png')" 
+				   >
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.models.Ad;
+			import frameworks.cavalier.app.models.jobs.AdJob;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.plugin.managers.ShortcutManager;
+			import frameworks.cavalier.ui.activities.managers.ActivityManager;
+			import frameworks.cavalier.ui.messaging.InfoIndicator;
+			
+			import mx.collections.ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			protected function onPropertyButtonClick():void{
+				ActivityManager.activityManager.lookAtOrCreateNewByClassName("AdEditorActivity");			
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onImportAdButtonClick():void{
+				ShortcutManager.shortcutManager.evokeShortcutByClassName("ImportAdShortcut");
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onDeletePlaylistButtonClick():void{				
+				var ads:ArrayCollection = Aggregator.aggregator.ads;
+				var ad:Ad = Aggregator.aggregator.selectedAd;
+				
+				// Update views
+				selector.dataProvider.removeItemAt(selector.dataProvider.getItemIndex(ad));
+				
+				var job:AdJob = new AdJob();
+				job.action = CRUDAction.DELETE;
+				job.payload = ad;
+				JobController.jobController.submitJob(job);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAssignTagsButtonClick():void{
+				if(!Aggregator.aggregator.selectedAd){
+					var info:InfoIndicator = new InfoIndicator();
+					info.text = "You should select an ad before adding tags";
+					info.show();
+					
+					return;
+				}
+				
+				var assignTagsActivity:AssignTagsToAdActivity = new AssignTagsToAdActivity();
+				assignTagsActivity.ad = Aggregator.aggregator.selectedAd;
+				ActivityManager.activityManager.addActivityToFront(assignTagsActivity);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" height="100%" gap="20">
+		<resourceParts:TagListWithAdBadge id="calendar" width="220" height="100%"/>
+		<parts:AdSelector id="selector" width="100%" height="100%"/>
+		
+		<!-- Action buttons -->
+		<s:VGroup id="editors" width="140" gap="15" clipAndEnableScrolling="true">
+			<crescent:Button label="Properties" icon="@Embed('supportClasses/images/PopOut.png')" width="100%" height="45" click="onPropertyButtonClick()"/>
+			<crescent:Button label="Assign Tags" icon="@Embed('supportClasses/images/PopOut.png')" width="100%" height="45" click="onAssignTagsButtonClick()"/>
+			
+			<s:Spacer height="20"/>
+			<crescent:RedButton label="Delete Selected" width="100%" height="45" click="onDeletePlaylistButtonClick()"/>
+		</s:VGroup>
+	</s:HGroup>
+	
+	<crescent:actions>
+		<crescent:Button id="importAdButton" label="Import Ad" click="onImportAdButtonClick()" icon="@Embed('supportClasses/images/Add.png')"/>
+	</crescent:actions>
+	
+</crescent:Activity>

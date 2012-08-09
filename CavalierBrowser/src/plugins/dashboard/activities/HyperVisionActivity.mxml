@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   xmlns:cavalier="library://cavalier/frameworks/cavalier" 
+				   title="hyper vision" 
+				   creationComplete="init()" 
+				   icon="@Embed('images/HyperVisionIcon.png')" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.events.ChromeEvent;
+			import frameworks.cavalier.messaging.SystemBus;
+			import frameworks.cavalier.ui.activities.managers.ActivityManager;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			import mx.events.ItemClickEvent;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var activities:ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var messages:ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			private var activityWatcher:ChangeWatcher;
+			
+			/**
+			 * @private
+			 */
+			private var messageWatcher:ChangeWatcher;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				for each(var activity:Activity in ActivityManager.activityManager.activityDeck.activities){
+					ActivityManager.activityManager.activityDeck.updateProxy(activity);
+				}
+				
+				addEventListener(ItemClickEvent.ITEM_CLICK, function(evt:ItemClickEvent):void{
+					evt.stopPropagation();
+					ActivityManager.activityManager.lookAt(evt.item as Activity);
+				});
+				
+				if(!activityWatcher)
+					activityWatcher = BindingUtils.bindProperty(this, "activities", ActivityManager.activityManager.activityDeck, "activities");
+				
+				if(!messageWatcher)
+					messageWatcher = BindingUtils.bindProperty(this, "messages", SystemBus.systemBus, "activeMessages");
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onRemoveAllClick():void{
+				ActivityManager.activityManager.closeAllActivities();
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onNewActivityClick():void{
+				ActivityManager.activityManager.createActivityTempalte();
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onMessageButtonClick():void{
+				ActivityManager.activityManager.lookAtOrCreateNewByClassName("MessageActivity");
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				if(!activityWatcher)
+					activityWatcher = BindingUtils.bindProperty(this, "activities", ActivityManager.activityManager.activityDeck, "activities");
+				
+				if(!messageWatcher)
+					messageWatcher = BindingUtils.bindProperty(this, "messages", SystemBus.systemBus, "activeMessages");
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				if(activityWatcher){
+					activityWatcher.unwatch();
+					activityWatcher = null;
+				}
+				
+				if(messageWatcher){
+					messageWatcher.unwatch();
+					messageWatcher = null;
+				}
+			}
+			
+			/**
+			 * @public
+			 */
+			override public function destroy():void{
+				super.destroy();
+				
+				if(activityWatcher){
+					activityWatcher.unwatch();
+					activityWatcher = null;
+				}
+				
+				if(messageWatcher){
+					messageWatcher.unwatch();
+					messageWatcher = null;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%" paddingLeft="5" paddingRight="5">
+			<cavalier:InfoTile title=".hyper vision" actAsButton="false" faceColor="#f9722c"
+							   width="100%" height="130" >
+				<cavalier:infoContent>
+					<s:HGroup verticalAlign="middle">
+							<crescent:NumericLabel text="{activities.length}" faceColor="#873810"/>
+							<s:Label fontSize="16" color="#ffffff" text="activities running"/>
+					</s:HGroup>
+				</cavalier:infoContent>
+			</cavalier:InfoTile>
+
+			<cavalier:InfoTile width="130" height="130" click="onMessageButtonClick()">
+				<cavalier:infoContent>
+					<s:Group height="110">
+						<s:HGroup right="0" top="0">
+							<s:Label text="{messages.length}"/>
+							<s:Label text="messages"/>
+						</s:HGroup>
+						
+						<s:BitmapImage source="@Embed('images/Notification.png')" right="0" bottom="0"/>
+					</s:Group>
+				</cavalier:infoContent>
+			</cavalier:InfoTile>
+
+			<cavalier:ActionTile width="130" height="130" icon="@Embed('images/NewActivityIcon.png')"
+								 click="onNewActivityClick()" />
+			<cavalier:ActionTile width="130" height="130" icon="@Embed('images/RemoveAllActivitiesIcon.png')"
+								 click="onRemoveAllClick()" />
+		</s:HGroup>
+		
+		<crescent:List id="activityList" width="100%" height="100%"
+					   dataProvider="{activities}" 
+					   itemRenderer="plugins.dashboard.supportClasses.ActivityRenderer" 
+					   horizontalScrollPolicy="off" >
+			<crescent:layout>
+				<s:TileLayout requestedColumnCount="3" columnAlign="justifyUsingWidth"
+							  paddingLeft="5" paddingRight="5" />
+			</crescent:layout>
+			
+		</crescent:List>
+					  
+	</s:VGroup>
+	
+</crescent:Activity>

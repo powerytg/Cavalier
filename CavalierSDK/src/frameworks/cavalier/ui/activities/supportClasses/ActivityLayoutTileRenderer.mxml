@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				width="190" height="190"
+			 	autoDrawBackground="false"	>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<s:BitmapImage source="@Embed('../images/TemplateButton.png')"
+				   includeIn="normal"/>
+
+	<s:BitmapImage source="@Embed('../images/TemplateButtonDown.png')"
+				   includeIn="selected"/>
+
+	<s:BitmapImage source="{data.icon}" horizontalCenter="0" verticalCenter="0"/>
+	
+</s:ItemRenderer>

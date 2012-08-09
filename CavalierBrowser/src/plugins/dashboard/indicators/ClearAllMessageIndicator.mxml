@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<messaging:IndicatorBase xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						 xmlns:s="library://ns.adobe.com/flex/spark" 
+						 xmlns:messaging="frameworks.cavalier.ui.messaging.*"
+						 xmlns:crescent="library://cavalier/frameworks/crescent" 
+						 width="100%" height="100%" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.messaging.SystemBus;
+			
+			/**
+			 * @private
+			 */
+			private function onConfirmClick():void{
+				SystemBus.systemBus.clearAllActiveMessages();
+				close();
+			}
+
+			/**
+			 * @private
+			 */
+			private function onCancelClick():void{
+				close();
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:BitmapImage source="@Embed('images/IndicatorAlertGlow.png')"/>
+	<s:BitmapImage source="@Embed('images/IndicatorAlert.png')"/>
+	
+	<s:HGroup width="100%" height="100%"
+			  paddingLeft="25" paddingRight="25" verticalAlign="middle">
+		<s:Label fontSize="24" text="Do you wish to clear all notifications?"/>
+		<s:Spacer width="25"/>
+		<s:HGroup width="100%" horizontalAlign="right" gap="15">
+			<crescent:RedButton id="confirmButton" label="Clear All" click="onConfirmClick()"/>
+			<crescent:Button id="cancelButton" label="Cancel" click="onCancelClick()"/>
+		</s:HGroup>
+	</s:HGroup>
+	
+</messaging:IndicatorBase>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties analytics="false" mainApplicationPath="Cavalier.mxml" projectUUID="9ac7d7d1-79c7-4612-9ee5-87bd77f0abb1" version="10">
+  <compiler additionalCompilerArguments="-locale en_US&#10;-define CONFIG::FLASH_10_1 true&#10;-define CONFIG::MOCK false&#10;-define CONFIG::PLATFORM true&#10;-define CONFIG::LOGGING false&#10;-swf-version=13" autoRSLOrdering="true" copyDependentFiles="true" flexSDK="AIR3SDK" fteInMXComponents="false" generateAccessible="false" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="true" useDebugRSLSwfs="true" verifyDigests="true" warn="true">
+    <compilerSourcePath/>
+    <libraryPath defaultLinkType="0">
+      <libraryPathEntry kind="4" path="">
+        <excludedEntries>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/qtp.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/advancedgrids.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation_air.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/air/airspark.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/netmon.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/mx/mx.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/air/applicationupdater.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/osmf.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/utilities.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/flex.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/sparkskins.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/qtp_air.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/datavisualization.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/core.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/spark_dmv.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation_dmv.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/air/airframework.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/air/applicationupdater_ui.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation_flashflexkit.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation_agent.swc" useDefaultLinkType="false"/>
+        </excludedEntries>
+      </libraryPathEntry>
+      <libraryPathEntry kind="1" linkType="1" path="libs"/>
+      <libraryPathEntry kind="3" linkType="1" path="/CrescentUI/bin/CrescentUI.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="3" linkType="1" path="/CavalierSDK/bin/CavalierSDK.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="3" linkType="1" path="/CavalierPlugins/bin/CavalierPlugins.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="3" linkType="1" path="/Applications/Adobe Flash Builder 4.5/sdks/4.5.1/frameworks/libs/mobile/mobilecomponents.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="3" linkType="1" path="/Applications/Adobe Flash Builder 4.5/sdks/4.5.1/frameworks/themes/Mobile/mobile.swc" useDefaultLinkType="false"/>
+    </libraryPath>
+    <sourceAttachmentPath/>
+  </compiler>
+  <applications>
+    <application path="Cavalier.mxml">
+      <airExcludes/>
+    </application>
+  </applications>
+  <modules/>
+  <buildCSSFiles/>
+  <flashCatalyst validateFlashCatalystCompatibility="false"/>
+  <buildTargets>
+    <buildTarget buildTargetName="com.adobe.flexide.multiplatform.ios.platform" iosSettingsVersion="1" provisioningFile="" releasePackageType="">
+      <airSettings airCertificatePath="" airTimestamp="true" version="1">
+        <airExcludes/>
+      </airSettings>
+      <multiPlatformSettings enabled="true" includePlatformLibs="false" platformID="com.adobe.flexide.multiplatform.ios.platform" version="2"/>
+      <actionScriptSettings version="1"/>
+    </buildTarget>
+    <buildTarget buildTargetName="com.qnx.flexide.multiplatform.qnx.platform" extraPackagingOptions="" signBarFile="false">
+      <airSettings airCertificatePath="" airTimestamp="true" version="1">
+        <airExcludes/>
+      </airSettings>
+      <multiPlatformSettings enabled="true" includePlatformLibs="false" platformID="com.qnx.flexide.multiplatform.qnx.platform" version="2"/>
+      <actionScriptSettings version="1"/>
+    </buildTarget>
+    <buildTarget airDownloadURL="" androidSettingsVersion="1" buildTargetName="com.adobe.flexide.multiplatform.android.platform">
+      <airSettings airCertificatePath="" airTimestamp="true" version="1">
+        <airExcludes/>
+      </airSettings>
+      <multiPlatformSettings enabled="true" includePlatformLibs="false" platformID="com.adobe.flexide.multiplatform.android.platform" version="2"/>
+      <actionScriptSettings version="1"/>
+    </buildTarget>
+    <buildTarget buildTargetName="default">
+      <airSettings airCertificatePath="" airTimestamp="true" version="1">
+        <airExcludes/>
+      </airSettings>
+      <multiPlatformSettings enabled="false" includePlatformLibs="false" platformID="default" version="2"/>
+      <actionScriptSettings version="1"/>
+    </buildTarget>
+  </buildTargets>
+</actionScriptProperties>

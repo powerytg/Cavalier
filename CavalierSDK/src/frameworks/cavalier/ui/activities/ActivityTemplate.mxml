@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent" 
+				   xmlns:layouts="frameworks.cavalier.ui.activities.layouts.*"
+				   xmlns:activities="frameworks.cavalier.ui.activities.*"  
+				   creationComplete="init()" >
+	
+	<fx:Declarations>
+		<s:Group id="activityContentGroup" width="{scroller.width}" height="{scroller.height}"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.ui.activities.events.ActivityTemplateEvent;
+			import frameworks.cavalier.ui.activities.layouts.ILayoutTemplate;
+			import frameworks.cavalier.ui.activities.supportClasses.UIPartHolder;
+			import frameworks.cavalier.ui.parts.UIPart;
+			
+			import mx.core.IVisualElement;
+			import mx.events.EffectEvent;
+			
+			import spark.effects.Animate;
+			import spark.effects.animation.MotionPath;
+			import spark.effects.animation.SimpleMotionPath;
+			
+			/**
+			 * @private
+			 */
+			protected var templateClass:Class;
+			
+			/**
+			 * @private
+			 */
+			protected var layoutTemplate:ILayoutTemplate;
+			
+			/**
+			 * @private
+			 */
+			protected var selectedHolder:UIPartHolder;
+			
+			/**
+			 * @private
+			 */
+			private var layoutChooser:LayoutChooser;
+			
+			/**
+			 * @private
+			 */
+			private var uiPartChooser:UIPartChooser;
+			
+			/**
+			 * @private
+			 */
+			private var editMode:Boolean = false;
+			
+			/**
+			 * @protected
+			 */
+			protected function init():void{
+				addEventListener(ActivityTemplateEvent.CHOOSE_UI_PART, onChooseUIPart, false, 0, true);
+				addEventListener(ActivityTemplateEvent.UI_PART_SELECTED, onUIPartSelected, false, 0, true);
+				
+				// Initialize the layout chooser
+				layoutChooser = new LayoutChooser();
+				layoutChooser.width = scroller.width;
+				layoutChooser.height = scroller.height;
+				layoutGroup.addElement(layoutChooser);
+				
+				layoutChooser.addEventListener(ActivityTemplateEvent.ACTIVITY_DISCARDED, onActivityDiscarded, false, 0, true);
+				layoutChooser.addEventListener(ActivityTemplateEvent.LAYOUT_CHANGE, onLayoutChange, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function discardLayoutChooser():void{
+				if(layoutChooser){
+					layoutChooser.removeEventListener(ActivityTemplateEvent.ACTIVITY_DISCARDED, onActivityDiscarded);
+					layoutChooser.removeEventListener(ActivityTemplateEvent.LAYOUT_CHANGE, onLayoutChange);
+					
+					if(layoutGroup.containsElement(layoutChooser))
+						layoutGroup.removeElement(layoutChooser);
+						
+					layoutChooser = null;
+				}
+			}
+			
+			/**
+			 * @protected
+			 */
+			protected function onActivityDiscarded(evt:ActivityTemplateEvent):void{
+				discardLayoutChooser();
+				close();
+			}
+			
+			/**
+			 * @protected
+			 */
+			override public function destroy():void{
+				super.destroy();
+				
+				removeEventListener(ActivityTemplateEvent.CHOOSE_UI_PART, onChooseUIPart);
+				removeEventListener(ActivityTemplateEvent.UI_PART_SELECTED, onUIPartSelected);
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onLayoutChange(event:ActivityTemplateEvent):void
+			{
+				templateClass = event.selectedLayoutClass;
+				title = event.title;
+				createLayoutTemplate();
+				
+				var animate:Animate = new Animate(scroller.viewport);
+				var mp:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition");
+				mp.valueTo = scroller.width;
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				animate.play();
+				animate.addEventListener(EffectEvent.EFFECT_END, function(effectEvent:EffectEvent):void{
+					scroller.viewport.horizontalScrollPosition = 0;
+					discardLayoutChooser();
+					editButton.visible = true;					
+				}, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function createLayoutTemplate():void{
+				var template:IVisualElement = new templateClass() as IVisualElement;
+				template.percentWidth = 100;
+				template.percentHeight = 100;
+				layoutGroup.addElement(activityContentGroup);
+				activityContentGroup.addElement(template);				
+				
+				layoutTemplate = template as ILayoutTemplate;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onChooseUIPart(evt:frameworks.cavalier.ui.activities.events.ActivityTemplateEvent):void{
+				evt.stopPropagation();
+				
+				selectedHolder = evt.selectedUIPartHolder;
+				
+				// Show the UI Part Chooser view
+				uiPartChooser = new UIPartChooser();
+				uiPartChooser.width = scroller.width;
+				uiPartChooser.height = scroller.height;
+				uiPartChooser.addEventListener(ActivityTemplateEvent.UI_PART_SELECTION_CANCELED, onUIPartSelectionCanceled, false, 0, true);
+				layoutGroup.addElement(uiPartChooser);
+				
+				// Play sliding animation
+				var animate:Animate = new Animate(scroller.viewport);
+				var mp:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition");
+				mp.valueTo = scroller.width;
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				animate.play();
+				animate.addEventListener(EffectEvent.EFFECT_END, function(effectEvent:EffectEvent):void{
+					uiPartChooser.loadUIPartList();
+				}, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function discardUIPartChooser():void{
+				if(uiPartChooser){
+					if(layoutGroup.containsElement(uiPartChooser))
+						layoutGroup.removeElement(uiPartChooser);
+					
+					uiPartChooser.removeEventListener(ActivityTemplateEvent.UI_PART_SELECTION_CANCELED, onUIPartSelectionCanceled);
+					
+					uiPartChooser = null;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onUIPartSelected(evt:ActivityTemplateEvent):void{
+				evt.stopPropagation();
+				
+				// Play a closing animation
+				var animate:Animate = new Animate(scroller.viewport);
+				var mp:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition");
+				mp.valueTo = 0;
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				animate.play();
+				animate.addEventListener(EffectEvent.EFFECT_END, function(effectEvent:EffectEvent):void{
+					discardUIPartChooser();
+					
+					// Create an UI part and put into the selected holder
+					var partClass:Class = evt.selectedUIPartDescriptor.partClass;
+					var part:UIPart = new partClass();
+					part.percentWidth = 100;
+					part.percentHeight = 100;
+					selectedHolder.part = part; 
+					
+					// Tell all part holders to enter "normal" mode
+					for each(var holder:UIPartHolder in layoutTemplate.holders){
+						if(holder.part)
+							holder.currentState = "normal";
+						else
+							holder.currentState = "noContent";
+					}
+				}, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onEditClick():void{
+				if(!editMode){
+					editMode = true;
+					editButton.label = "Done Customization";
+					
+					for each(var holder:UIPartHolder in layoutTemplate.holders){
+						holder.currentState = "editMode";
+					}
+				}
+				else{
+					editMode = false;
+					editButton.label = "Edit Activity Content";
+					
+					for each(holder in layoutTemplate.holders){
+						if(holder.part)
+							holder.currentState = "normal";
+						else
+							holder.currentState = "noContent";
+					}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onUIPartSelectionCanceled(evt:ActivityTemplateEvent = null):void{
+				// Play a closing animation
+				var animate:Animate = new Animate(scroller.viewport);
+				var mp:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition");
+				mp.valueTo = 0;
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				animate.play();
+				animate.addEventListener(EffectEvent.EFFECT_END, function(effectEvent:EffectEvent):void{
+					discardUIPartChooser();
+					
+					for each(var holder:UIPartHolder in layoutTemplate.holders){
+						if(holder.part)
+							holder.currentState = "normal";
+						else
+							holder.currentState = "noContent";
+					}
+				}, false, 0, true);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<!-- 3-view slider -->
+	<s:Scroller id="scroller" width="100%" height="100%"
+				horizontalScrollPolicy="off" verticalScrollPolicy="off">
+		
+		<s:HGroup id="layoutGroup" gap="0">
+		</s:HGroup>		
+	</s:Scroller>	
+	
+	<crescent:actions>
+		<crescent:Button id="editButton" label="Edit Activity Content" click="onEditClick()" visible="false"/>
+	</crescent:actions>
+	
+</crescent:Activity>

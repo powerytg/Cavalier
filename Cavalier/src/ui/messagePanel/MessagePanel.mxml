@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:supportClasses="ui.messagePanel.supportClasses.*" 
+		 xmlns:crescent="library://cavalier/frameworks/crescent" 
+		 width="100%" height="100%" >
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.messaging.SystemBus;
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!-- Background -->
+	<s:BitmapImage left="0" right="0" top="0" bottom="0"
+				   source="@Embed('skins/images/BackgroundPattern.png')"
+				   fillMode="repeat"/> 
+	
+	<!-- Content -->
+	<s:Scroller left="0" right="0" top="0" bottom="110"
+			 	horizontalScrollPolicy="off"	>
+		<s:Group width="100%">
+			<crescent:Accordion width="100%">
+				<supportClasses:BadgeAccordionSection width="100%"
+													   title="Notifications"
+													   numItems="{SystemBus.systemBus.activeMessages.length}" >
+					<crescent:List width="100%"
+								   dataProvider="{SystemBus.systemBus.activeMessages}"
+								   itemRenderer="frameworks.cavalier.ui.messaging.MessageRenderer" 
+								   verticalScrollPolicy="off" />
+					
+				</supportClasses:BadgeAccordionSection>
+				
+				<supportClasses:BadgeAccordionSection width="100%"
+													   title="On Going"
+													   numItems="{SystemBus.systemBus.alwaysOnMessages.length}">
+					<crescent:List width="100%"
+								   dataProvider="{SystemBus.systemBus.alwaysOnMessages}"
+								   itemRenderer="frameworks.cavalier.ui.messaging.MessageRenderer" 
+								   verticalScrollPolicy="off">
+					</crescent:List>
+				</supportClasses:BadgeAccordionSection>
+				
+				<supportClasses:BadgeAccordionSection width="100%"
+													   title="Completed and Logs">
+					<crescent:List width="100%"
+								   dataProvider="{SystemBus.systemBus.inactiveMessages}"
+								   itemRenderer="frameworks.cavalier.ui.messaging.MessageRenderer" 
+								   verticalScrollPolicy="off"/>
+					
+				</supportClasses:BadgeAccordionSection>			
+			</crescent:Accordion>					
+		</s:Group>
+	</s:Scroller>
+
+	<!-- Close button -->
+	<supportClasses:RingButton id="closeButton" left="0" verticalCenter="0"/>
+
+	<!-- Inner shadow --> 
+	<s:BitmapImage width="31" height="100%" fillMode="repeat"
+				   source="@Embed('skins/images/InnerShadow.png')"/> 
+
+	<s:VGroup left="15" right="15" bottom="15">
+		<crescent:RedButton id="removeAllButton" label="Clear All"
+						 	width="100%" height="100%"/>
+		
+		<crescent:Button id="openInActivityButton" label="Open in a New Activity"
+						 icon="@Embed('skins/images/PopOut.png')"
+						 width="100%" height="100%"/>
+	</s:VGroup>
+	
+	
+</s:Group>

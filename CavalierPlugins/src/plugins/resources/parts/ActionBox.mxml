@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:mx="library://ns.adobe.com/flex/mx" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				 creationComplete="init()" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.plugin.core.ActionDescriptor;
+			import frameworks.cavalier.plugin.managers.ActionManager;
+			import frameworks.cavalier.ui.parts.events.AdSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.ClipSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.PlaylistSelectorEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			import frameworks.crescent.components.Button;
+			import frameworks.crescent.components.RedButton;
+			
+			import mx.events.PropertyChangeEvent;
+			
+			/**
+			 * @private
+			 */
+			private var useGlobal:Boolean = true;
+			
+			/**
+			 * @public
+			 */
+			public var modelType:String;
+			
+			/**
+			 * @private
+			 */
+			private var currentModelType:String;
+			
+			/**
+			 * @private
+			 */
+			private var actionLookUp:Dictionary = new Dictionary();
+			
+			/**
+			 * @private
+			 */
+			private var watchingAggregator:Boolean = false;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				if(!modelType || modelType == ""){
+					useGlobal = true;
+				
+					if(Aggregator.aggregator.lastSelectedAnalysisResource){
+						currentModelType = Aggregator.aggregator.lastSelectedAnalysisResource.resourceType;
+						rebuildButtonList();
+					}
+					
+					if(!watchingAggregator){
+						watchingAggregator = true;
+						Aggregator.aggregator.addEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onAggregatorPropertyChange);
+					}
+					
+					// Also listen to local changes
+					localMessageBus.addEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onLocalClipChange);
+					localMessageBus.addEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onLocalPlaylistChange);
+					localMessageBus.addEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onLocalAdChange);
+				}
+				else{
+					useGlobal = false;
+					currentModelType = modelType;
+					rebuildButtonList();
+				}
+			}
+			
+			/**
+			 * @public
+			 */
+			override public function destroy():void{
+				localMessageBus.removeEventListener(ClipSelectorEvent.CLIP_SELECTION_CHANGE, onLocalClipChange);
+				localMessageBus.removeEventListener(PlaylistSelectorEvent.PLAYLIST_SELECTION_CHANGE, onLocalPlaylistChange);
+				localMessageBus.removeEventListener(AdSelectorEvent.AD_SELECTION_CHANGE, onLocalAdChange);
+
+				Aggregator.aggregator.removeEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onAggregatorPropertyChange);
+				clearAllButtons();
+				actionLookUp = null;
+				
+				super.destroy();
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				if(!useGlobal)
+					return;
+				
+				if(!watchingAggregator){
+					watchingAggregator = true;
+					Aggregator.aggregator.addEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onAggregatorPropertyChange);
+				}
+				
+				if(Aggregator.aggregator.lastSelectedAnalysisResource){
+					if(currentModelType != Aggregator.aggregator.lastSelectedAnalysisResource.resourceType){
+						currentModelType = Aggregator.aggregator.lastSelectedAnalysisResource.resourceType;
+						rebuildButtonList();
+					}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				if(!useGlobal)
+					return;
+				
+				super.onDeactivited(evt);
+				Aggregator.aggregator.removeEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onAggregatorPropertyChange);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAggregatorPropertyChange(evt:PropertyChangeEvent):void{
+				var type:String = "";
+				switch(evt.property.toString()){
+					case "selectedClip":
+						type = "clip";
+						break;
+					case "selectedAd":
+						type = "ad";
+						break;
+					case "selectedPlaylist":
+						type = "playlist";
+						break;
+				}
+				
+				if(type != "" && type != currentModelType){
+					currentModelType = type;
+					rebuildButtonList();
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function rebuildButtonList():void{
+				clearAllButtons();
+				
+				var descList:Array = ActionManager.actionManager.getActionDescriptorsByModelType(currentModelType);
+				for each(var desc:ActionDescriptor in descList){
+					var button:Button = desc.useRedButton ? new RedButton() : new Button();
+					button.percentWidth = 100;
+					button.height = 45;
+					
+					button.label = desc.title;
+					if(desc.icon)
+						button.setStyle("icon", desc.icon);
+					
+					actionLookUp[button] = desc;
+					button.addEventListener(MouseEvent.CLICK, onButtonClick, false, 0, true);
+					buttonGroup.addElement(button);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function clearAllButtons():void{
+				var buttons:Array = [];
+				for (var button:Object in actionLookUp){
+					buttons.push(button);
+					button.removeEventListener(MouseEvent.CLICK, onButtonClick);
+				}
+				
+				for each(button in buttons){
+					delete actionLookUp[button];
+				}
+				
+				buttonGroup.removeAllElements();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onButtonClick(evt:MouseEvent):void{
+				var desc:ActionDescriptor = actionLookUp[evt.currentTarget];
+				if(desc){
+					ActionManager.actionManager.evokeActionByDescriptor(desc, localMessageBus);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onLocalClipChange(evt:ClipSelectorEvent):void{
+				if(currentModelType != "clip"){
+					currentModelType = "clip";
+					rebuildButtonList();
+				}
+			}
+
+			/**
+			 * @private
+			 */
+			private function onLocalPlaylistChange(evt:PlaylistSelectorEvent):void{
+				if(currentModelType != "playlist"){
+					currentModelType = "playlist";
+					rebuildButtonList();
+				}
+			}
+
+			/**
+			 * @private
+			 */
+			private function onLocalAdChange(evt:AdSelectorEvent):void{
+				if(currentModelType != "ad"){
+					currentModelType = "ad";
+					rebuildButtonList();
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:VGroup id="buttonGroup" width="100%" height="100%" gap="15" clipAndEnableScrolling="true">
+		
+	</s:VGroup>
+	
+</cavalier:UIPart>

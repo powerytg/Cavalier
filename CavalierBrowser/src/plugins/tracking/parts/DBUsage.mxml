@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				 xmlns:mx="library://ns.adobe.com/flex/mx" 
+				 canPopOut="true" 
+				 creationComplete="init()"  >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:SolidColor id="fill1" color="#9ed950"/>
+		<s:SolidColor id="fill2" color="#cfb146"/>
+		<s:SolidColor id="fill3" color="#cc7356"/>
+		<s:SolidColor id="fill4" color="#823456"/>		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.TrackingController;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.collections.ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var dataProvider:ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				refresh();
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				refresh();
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDestroy(evt:ActivityContainerEvent):void{
+				if(dataProvider)
+					dataProvider.removeAll();
+				dataProvider = null;
+				
+				super.onDestroy(evt);
+			}
+			
+			/**
+			 * @public
+			 */
+			public function refresh():void{
+				TrackingController.trackingController.analysisDBUsage(onDataReceived);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onDataReceived(result:ArrayCollection):void{
+				dataProvider = result;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:PieChart id="chart" width="100%" height="100%" dataProvider="{dataProvider}" >
+		<mx:series>
+			<mx:PieSeries field="value" nameField="label" fills="{[fill1, fill2, fill3, fill4]}"/>
+		</mx:series>
+	</mx:PieChart>
+	
+	<mx:Legend dataProvider="{chart}" color="#ffffff"/>
+	
+</cavalier:UIPart>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:crescent="library://cavalier/frameworks/crescent" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Metadata>
+		[Event(name="uiPartSelectionCanceled", type="frameworks.cavalier.ui.activities.events.ActivityTemplateEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.plugin.core.UIPartCatagory;
+			import frameworks.cavalier.plugin.managers.UIPartManager;
+			import frameworks.cavalier.ui.activities.events.ActivityTemplateEvent;
+			import frameworks.cavalier.ui.activities.supportClasses.UIPartCatagoryGroup;
+			
+			import mx.collections.ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			public function loadUIPartList():void{
+				// Create an accordion to hold all the part groups
+				for(var cat:String in UIPartManager.uiPartManager.parts){
+					var section:UIPartCatagoryGroup = new UIPartCatagoryGroup();
+					section.title = cat;
+					section.parts = UIPartManager.uiPartManager.parts[cat] as ArrayCollection;
+					section.percentWidth = 100;
+					section.icon = UIPartCatagory.getCatatoryIcon(cat);
+					section.partsList.selectedItem = null;
+					partsGroup.addElement(section);
+				}
+				
+				removeElement(initGroup);
+				uiPartView.visible = true;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onCancelClick(event:MouseEvent):void
+			{
+				dispatchEvent(new ActivityTemplateEvent(ActivityTemplateEvent.UI_PART_SELECTION_CANCELED));
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<!-- Init screen -->
+	<crescent:SocketGroup id="initGroup" width="250" horizontalCenter="0" verticalCenter="0">
+		<s:Label text="Initializing..." fontSize="18" color="#ffffff"
+				 horizontalCenter="0" verticalCenter="0" />
+	</crescent:SocketGroup>
+	
+	<s:HGroup id="uiPartView" width="100%" height="100%" gap="15" visible="false">
+		<crescent:Section title="Select UI Parts" width="30%">
+			<s:VGroup width="100%" paddingTop="20">
+				<s:Label text="Click on the available UI parts to build up this custom activity"
+						 width="100%" color="#696969" />
+				<s:Spacer height="25"/>
+				<crescent:Button id="cancelButton" label="Go Back" width="100%" click="onCancelClick(event)"/>
+			</s:VGroup>			
+		</crescent:Section>
+
+		<s:Scroller width="100%" height="100%" horizontalScrollPolicy="off">
+			<s:VGroup id="partsGroup" width="70%" />
+		</s:Scroller>
+		
+	</s:HGroup>
+
+	
+	
+</s:Group>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:crescent="library://cavalier/frameworks/crescent">
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.plugin.managers.ShortcutManager;
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup width="100%" height="100%">
+		<!-- Shortcuts -->
+		<crescent:Accordion id="pluginAccordion" width="100%" height="100%">		
+			<crescent:AccordionSection title="common" width="100%" titleBarStyleName="sidePanelAccordionTitleBar" >
+				<crescent:List id="shortcutList" width="100%" 
+							   dataProvider="{ShortcutManager.shortcutManager.selectedShortcuts}"
+							   itemRenderer="ui.sidePanel.supportClasses.ShortcutRenderer" 
+							   verticalScrollPolicy="off" horizontalScrollPolicy="off">
+					<!--
+					<crescent:layout>
+						<s:TileLayout paddingTop="15"/>
+					</crescent:layout>
+					-->
+				</crescent:List>
+			</crescent:AccordionSection>
+		</crescent:Accordion>		
+
+		<!-- Shrink/expand button -->
+		<crescent:CircularButton id="toggleSidePanelButton" icon="@Embed('images/CloseSidePanel.png')"/>
+	</s:HGroup>
+
+	
+</s:Group>

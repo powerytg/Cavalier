@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<parts:StatisticUIPart 
+			  xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			  xmlns:s="library://ns.adobe.com/flex/spark" 
+			  xmlns:parts="frameworks.cavalier.ui.parts.*"
+			  xmlns:crescent="library://cavalier/frameworks/crescent" 
+			  creationComplete="init()" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Metadata>
+		[Event(name="clipDateChange", type="frameworks.cavalier.ui.parts.events.CalendarEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.parts.events.CalendarEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			
+			import plugins.resources.parts.supportClasses.ClipStatisticByDateRenderer;
+			
+			import spark.events.IndexChangeEvent;
+
+			/**
+			 * @private
+			 */
+			[Bindable]
+			public var calendar:ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			private var calendarWatcher:ChangeWatcher;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				if(!calendarWatcher)
+					calendarWatcher = BindingUtils.bindProperty(this, "calendar", Aggregator.aggregator, "allTimeClipStatisticList", true);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				if(!calendarWatcher)
+					calendarWatcher = BindingUtils.bindProperty(this, "calendar", Aggregator.aggregator, "allTimeClipStatisticList", true);
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				if(calendarWatcher){
+					calendarWatcher.unwatch();
+					calendarWatcher = null;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override public function destroy():void{
+				super.destroy();
+				
+				if(calendarWatcher){
+					calendarWatcher.unwatch();
+					calendarWatcher = null;
+				}
+				
+				calendar = null;
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onSelectionChange(evt:IndexChangeEvent):void{
+				var event:CalendarEvent = new CalendarEvent(CalendarEvent.CLIP_DATE_CHANGE);
+				event.selectedItem = dateList.selectedItem;
+				localMessageBus.dispatchEvent(event);
+				
+				// Also clone the event to notify conjoint UI parts. This cloned event doesn't go to 
+				// host activity's message bus
+				var localEvent:CalendarEvent = new CalendarEvent(CalendarEvent.CLIP_DATE_CHANGE);
+				localEvent.selectedItem = dateList.selectedItem;
+				dispatchEvent(localEvent);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" height="100%">
+		<crescent:List id="dateList" width="100%" height="100%"
+					   dataProvider="{calendar}"
+					   itemRenderer="plugins.resources.parts.supportClasses.ClipStatisticByDateRenderer" 
+					   change="onSelectionChange(event)" />
+	</s:VGroup>
+	
+</parts:StatisticUIPart>

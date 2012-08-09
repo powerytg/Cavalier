@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 height="60"
+		 implements="frameworks.cavalier.ui.components.supportClasses.ITimelineMarker" xmlns:crescent="library://cavalier/frameworks/crescent" >
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.models.Annotation;
+			import frameworks.cavalier.ui.components.supportClasses.ITimelineMarkerMetadata;
+			
+			import mx.core.UIComponent;
+			
+			import plugins.annotations.activities.events.ExpandedAnnotationMarkerEvent;
+			
+			/**
+			 * @public
+			 */
+			public var faceColor:Number = 0x07f0c7;
+			
+			/**
+			 * @private
+			 */
+			[Bindable]
+			private var annotation:Annotation;
+			
+			/**
+			 * @public
+			 */
+			public function get data():ITimelineMarkerMetadata
+			{
+				return annotation;
+			}
+			
+			/**
+			 * @public
+			 */
+			public function set data(value:ITimelineMarkerMetadata):void
+			{
+				annotation = value as Annotation;
+				faceColor = annotation.color;
+			}
+			
+			/**
+			 * @public
+			 */
+			public function get resizer():UIComponent{
+				return resizeHandle;
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				var aWidth:Number = unscaledWidth - 30;
+				graphics.clear();
+				graphics.lineStyle(1, faceColor);
+				graphics.beginFill(faceColor, 0.3);
+				graphics.drawRect(0, 0, aWidth, unscaledHeight);
+				graphics.beginFill(faceColor, 0.75);
+				graphics.drawRect(0, 0, 10, unscaledHeight);
+				graphics.endFill();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onKeyDown(evt:KeyboardEvent):void{
+				var contentChanged:Boolean = false;
+				if(evt.keyCode == Keyboard.ENTER){
+					// End input
+					contentChanged = (annotation.content == contentInput.text);
+					annotation.content = contentInput.text;
+					contentInput.visible = false;
+					contentLabel.visible = true;
+				}
+				
+				if(contentChanged){
+					var event:ExpandedAnnotationMarkerEvent = new ExpandedAnnotationMarkerEvent(ExpandedAnnotationMarkerEvent.ANNOTATION_CONTENT_CHANGE, true);
+					event.annotation = annotation;
+					event.newContent = contentInput.text;
+					dispatchEvent(event);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onEditClick(evt:MouseEvent):void{
+				evt.stopPropagation();
+
+				trace('good!!');
+				
+				contentLabel.visible = false;
+				contentInput.visible = true;
+				contentInput.setFocus();
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!-- Label -->
+	<s:Group left="13" right="70" top="3" bottom="3" height="100%">
+		<s:Label id="contentLabel" width="100%" height="100%"
+				 fontSize="24"
+				 color="#ffffff" 
+				 text="{annotation.content}"/> 
+
+		<!-- Input box -->
+		<s:TextInput id="contentInput" width="100%" height="100%" visible="false"
+					 keyDown="onKeyDown(event)" />
+	</s:Group>
+
+	<s:Image id="editButton" source="@Embed('images/EditIcon.png')" right="50" verticalCenter="0" mouseDown="onEditClick(event)"/>
+	
+	<!-- Resizer -->
+	<s:Image id="resizeHandle" source="@Embed('images/Resizer.png')" verticalCenter="0" right="0"/>
+</s:Group>

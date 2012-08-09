@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent" 
+				   xmlns:parts="plugins.tracking.parts.*"
+				   title="resource insight" 
+				   creationComplete="init()" >
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.TrackingController;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.plugin.managers.UIPartManager;
+			import frameworks.cavalier.ui.parts.UIPart;
+			
+			import mx.events.EffectEvent;
+			
+			import spark.effects.Animate;
+			import spark.effects.animation.MotionPath;
+			import spark.effects.animation.SimpleMotionPath;
+			
+			private function init():void{
+				var searchPart:UIPart = UIPartManager.uiPartManager.requestUIPartByClassName("plugins.awesomeSearch.parts.AwesomeSelector");
+				if(searchPart){
+					searchPart.percentWidth = 100;
+					searchPart.percentHeight = 100;
+					searchGroup.addElement(searchPart);
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onMoreButtonClick():void{
+				secondPage.visible = true;
+				var animate:Animate = new Animate(pageScroller.viewport);
+				var mp:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition");
+				mp.valueTo = firstPage.width;
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				animate.play();
+				animate.addEventListener(EffectEvent.EFFECT_END, function(evt:EffectEvent):void{
+					firstPage.visible = false;
+				}, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onLessButtonClick():void{
+				firstPage.visible = true;
+				var animate:Animate = new Animate(pageScroller.viewport);
+				var mp:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition");
+				mp.valueTo = 0;
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				animate.play();
+				animate.addEventListener(EffectEvent.EFFECT_END, function(evt:EffectEvent):void{
+					secondPage.visible = false;
+				}, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onClearButtonClick():void{
+				if(Aggregator.aggregator.lastSelectedAnalysisResource)
+					TrackingController.trackingController.clearAllTrackingDataForClip(Aggregator.aggregator.lastSelectedAnalysisResource);
+				
+				hitsByAllTime.clear();
+				hitsByYear.clear();
+				hitsByMonth.clear();
+				heatmap.clear();
+				clipDbUsage.clear();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup width="100%" height="100%" gap="20">
+		<s:Group id="searchGroup" width="100%" height="100%"/>
+		
+		<s:Group width="100%" height="100%">
+			<s:Scroller id="pageScroller" width="100%" height="100%"
+					 	horizontalScrollPolicy="off" verticalScrollPolicy="off"	>
+				<s:HGroup id="pageGroup" width="100%" height="100%" gap="0">
+					<!-- First page -->
+					<s:VGroup id="firstPage" width="{pageGroup.width}" height="100%" 
+							  visible="{Aggregator.aggregator.lastSelectedAnalysisResource != null}">
+						<s:Group width="100%">
+							<s:BitmapImage source="@Embed('supportClasses/images/Legend.png')"/>
+							<s:HGroup verticalAlign="middle" right="0">
+								<crescent:RedButton label="Clear Tracking Data" click="onClearButtonClick()"/>
+								<crescent:CircularButton id="moreButton" icon="@Embed('supportClasses/images/More.png')" click="onMoreButtonClick()"
+														 visible="{Aggregator.aggregator.lastSelectedAnalysisResource is Clip}" />								
+							</s:HGroup>
+						</s:Group>
+						
+						<parts:HitsByAllTime id="hitsByAllTime" width="100%" height="100%"/>
+						<parts:HitsByYear id="hitsByYear" width="100%" height="100%"/>
+						<parts:HitsByMonth id="hitsByMonth" width="100%" height="100%"/>
+					</s:VGroup>			
+					
+					<!-- Second page -->
+					<s:VGroup id="secondPage" width="{pageGroup.width}" height="100%" 
+							  visible="false">
+						<s:Group width="100%">
+							<crescent:CircularButton id="lessButton" right="0" icon="@Embed('supportClasses/images/Less.png')" click="onLessButtonClick()"/>
+						</s:Group>
+						
+						<parts:Heatmap id="heatmap" width="100%" height="100%"/>
+						<parts:ClipDBUsage id="clipDbUsage" width="100%" height="100%"/>
+					</s:VGroup>
+				</s:HGroup>
+			</s:Scroller>
+			
+			<!-- Instructions -->
+			<crescent:SocketGroup width="500" height="350" horizontalCenter="0" verticalCenter="0"
+								  visible="{Aggregator.aggregator.lastSelectedAnalysisResource == null}">
+				<s:VGroup horizontalCenter="0" verticalCenter="0">
+					<s:Label id="infoLabel" text="To get started, select an analyzable resource" 
+							 fontSize="18" color="#ffffff"/>
+					<s:Spacer height="25"/>
+					<s:Label text="The following resources are supported:"/>
+					<s:HGroup verticalAlign="middle">
+						<s:BitmapImage source="@Embed('supportClasses/images/Item.png')"/>
+						<s:Label text="Playlists"/>
+					</s:HGroup>
+					<s:HGroup verticalAlign="middle">
+						<s:BitmapImage source="@Embed('supportClasses/images/Item.png')"/>
+						<s:Label text="Video Clips"/>
+					</s:HGroup>
+					<s:HGroup verticalAlign="middle">
+						<s:BitmapImage source="@Embed('supportClasses/images/Item.png')"/>
+						<s:Label text="Ads"/>
+					</s:HGroup>
+
+				</s:VGroup>
+			</crescent:SocketGroup>
+		</s:Group>
+	</s:HGroup>
+	
+</crescent:Activity>

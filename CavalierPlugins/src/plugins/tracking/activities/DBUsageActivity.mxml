@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   title="db usage" xmlns:parts="plugins.tracking.parts.*" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import plugins.tracking.indicators.ClearTrackingDBIndicator;
+			import plugins.tracking.indicators.ResetDBIndicator;
+			
+			/**
+			 * @private
+			 */
+			private function onClearAllClick():void{
+				var indicator:ClearTrackingDBIndicator = new ClearTrackingDBIndicator();
+				indicator.show();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onResetClick():void{
+				var indicator:ResetDBIndicator = new ResetDBIndicator();
+				indicator.show();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:HGroup width="100%" height="100%" gap="15">
+		<!-- Options -->
+		<crescent:Section title="Options" width="170">
+			<s:VGroup width="100%" paddingTop="25" gap="10">
+				<s:Label color="#696969" width="100%"
+						 text="The tracking data is aggregated by the example plugin in OSMF based players"/> 
+				<s:Spacer height="15"/>
+				<crescent:RedButton label="Clear All Tracking Data" width="100%" click="onClearAllClick()"/>
+				<crescent:RedButton label="Reset Database" width="100%" click="onResetClick()"/>
+			</s:VGroup>
+		</crescent:Section>
+		
+		<!-- DB graph -->
+		<parts:DBUsage width="100%" height="100%"/>
+	</s:HGroup>
+	
+	
+</crescent:Activity>

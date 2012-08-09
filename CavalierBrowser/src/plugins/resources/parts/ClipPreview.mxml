@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cavalier:UIPart xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" 
+				 xmlns:cavalier="library://cavalier/frameworks/cavalier"
+				 xmlns:crescent="library://cavalier/frameworks/crescent" 
+				 xmlns:supportClasses="plugins.resources.parts.supportClasses.*" 
+				 canPopOut="true" 
+				 affectedDomain="global">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.events.PlaylistEvent;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.ModelBase;
+			import frameworks.cavalier.app.models.Playlist;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.parts.events.ClipSelectorEvent;
+			import frameworks.cavalier.ui.parts.events.PlaylistSelectorEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.events.FlexEvent;
+			
+			import org.osmf.events.MediaPlayerStateChangeEvent;
+			import org.osmf.events.TimeEvent;
+			
+			/**
+			 * @private
+			 */
+			private var timeSliderDragging:Boolean = false;
+			
+			/**
+			 * @private
+			 */
+			private var _clip:Clip;
+
+			/**
+			 * @private
+			 */
+			public function get clip():Clip
+			{
+				return _clip;
+			}
+
+			/**
+			 * @private
+			 */
+			public function set clip(value:Clip):void
+			{
+				_clip = value;
+				if(videoDisplay.playing)
+					videoDisplay.stop();
+				
+				if(_clip){
+					videoDisplay.source = _clip.url;
+					videoDisplay.play();
+				}
+			}
+
+			/**
+			 * @private
+			 */
+			private function onMediaPlayerStateChange(evt:MediaPlayerStateChangeEvent):void{
+				if(evt.state == "playbackError"){
+					errorGroup.visible = true;
+					errorText.text = "Error occurred while processing the video";
+				}
+				else{
+					errorGroup.visible = false;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onPlayButtonClick():void{
+				if(videoDisplay.playing)
+					videoDisplay.pause();
+				else
+					videoDisplay.play();
+			}
+
+			/**
+			 * @private
+			 */
+			private function onTimeChange(evt:TimeEvent):void{
+				if(!timeSliderDragging)
+					timeSlider.value = evt.time;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimeSliderMouseDown(evt:MouseEvent):void{
+				evt.stopPropagation();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimeSliderChangeStart(evt:FlexEvent):void{
+				timeSliderDragging = true;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTimeSliderChangeEnd(evt:FlexEvent):void{
+				videoDisplay.seek(timeSlider.value);
+				timeSliderDragging = false;
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				graphics.clear();
+				graphics.beginFill(0x000000);
+				graphics.drawRect(0, 0, unscaledWidth, unscaledHeight);
+				graphics.endFill();
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				if(videoDisplay.playing)
+					videoDisplay.stop();
+			}
+			
+			/**
+			 * @private
+			 */
+//			override protected function onActivited(evt:ActivityContainerEvent):void{
+//				super.onActivited(evt);
+//
+//				videoDisplay.play();
+//			}
+			
+			/**
+			 * @private
+			 */
+			override public function destroy():void{
+				clip = null;				
+				super.destroy();
+			}
+			
+			/**
+			 * @public
+			 */
+			public function pause():void{
+				if(videoDisplay.playing)
+					videoDisplay.pause();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<!-- Video surface -->
+	<supportClasses:AdvancedVideoDisplay id="videoDisplay"
+				 left="0" right="0" top="0" bottom="0"
+				 autoPlay="true" scaleMode="zoom"
+				 mediaPlayerStateChange="onMediaPlayerStateChange(event)"
+				 currentTimeChange="onTimeChange(event)" />
+
+	<!-- Player chrome -->
+	<s:HGroup id="playerChrome" width="90%" bottom="15" verticalAlign="middle" horizontalCenter="0" >
+		<crescent:CircularButton id="playButton" icon="@Embed('images/Play.png')" click="onPlayButtonClick()"/>
+		<supportClasses:PlayerChromeSlider id="timeSlider" width="100%"
+										   minimum="0" maximum="{videoDisplay.duration}"
+										   mouseDown="onTimeSliderMouseDown(event)" 
+										   changeStart="onTimeSliderChangeStart(event)" 
+										   changeEnd="onTimeSliderChangeEnd(event)" />
+	</s:HGroup>
+	
+	<!-- Info group -->
+	<s:HGroup id="errorGroup" horizontalCenter="0" verticalCenter="0" verticalAlign="middle" >
+		<s:BitmapImage source="@Embed('images/AlertSmall.png')"/>
+		<s:Label id="errorText" text="Playlist is empty" horizontalCenter="0" verticalCenter="0"/>
+	</s:HGroup>
+</cavalier:UIPart>

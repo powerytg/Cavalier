@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:crescent="library://cavalier/frameworks/crescent"
+		 xmlns:cavalier="library://cavalier/frameworks/cavalier" 
+		 height="220"
+		 implements="frameworks.cavalier.messaging.IMessageRenderer" >
+	<fx:Declarations>
+		<s:RadioButtonGroup id="scrollingStyleGroup" selectedValue="{ActivityManager.activityManager.activityDeck.scrollingStyle}"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.ui.activities.managers.ActivityManager;
+			import frameworks.crescent.activity.ActivityDeckScrollingStyle;
+			
+			/**
+			 * @public
+			 */
+			private var _data:Object;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public function get data():Object
+			{
+				return _data;
+			}
+			
+			/**
+			 * @public
+			 */
+			public function set data(value:Object):void
+			{
+				_data = value;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onOptimizedClick():void{
+				ActivityManager.activityManager.activityDeck.scrollingStyle =  ActivityDeckScrollingStyle.OPTIMIZED;
+				ActivityManager.activityManager.activityDeck.transparentActivityBackground = true;
+			}
+
+			/**
+			 * @private
+			 */
+			private function onFluidClick():void{
+				ActivityManager.activityManager.activityDeck.scrollingStyle = ActivityDeckScrollingStyle.FLUID;
+				ActivityManager.activityManager.activityDeck.transparentActivityBackground = true;
+			}
+
+			/**
+			 * @private
+			 */
+			private function onSwipeClick():void{
+				ActivityManager.activityManager.activityDeck.scrollingStyle = ActivityDeckScrollingStyle.SWIPE;
+				ActivityManager.activityManager.activityDeck.transparentActivityBackground = false;
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:VGroup left="10" right="10" top="20" bottom="0" gap="15">
+		<s:Label text="Activity Scrolling Style" fontSize="20" color="#b7e3f8"/>
+		<crescent:SocketGroup width="100%" height="100%">
+			<s:VGroup width="100%" height="100%" verticalAlign="middle" gap="0">
+				<crescent:RadioButton value="optimized" label="Optimized" group="{scrollingStyleGroup}" click="onOptimizedClick()"/>
+				<crescent:RadioButton value="fluid" label="Flex Default" group="{scrollingStyleGroup}" click="onFluidClick()"/>
+				<crescent:RadioButton value="swipe" label="Swipe" group="{scrollingStyleGroup}" click="onSwipeClick()"/>
+			</s:VGroup>
+		</crescent:SocketGroup>
+
+	</s:VGroup>
+
+</s:Group>

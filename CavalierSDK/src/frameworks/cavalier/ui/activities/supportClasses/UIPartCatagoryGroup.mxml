@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:crescent="library://cavalier/frameworks/crescent"
+		  gap="20" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.plugin.core.UIPartDescriptor;
+			import frameworks.cavalier.ui.activities.events.ActivityTemplateEvent;
+			
+			import mx.collections.ArrayCollection;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var title:String;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var icon:Class;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var parts:ArrayCollection;
+			
+			/**
+			 * @private
+			 */
+			protected function onListChange():void{
+				var desc:UIPartDescriptor = partsList.selectedItem as UIPartDescriptor;
+				var evt:ActivityTemplateEvent = new ActivityTemplateEvent(ActivityTemplateEvent.UI_PART_SELECTED, true);
+				evt.selectedUIPartDescriptor = desc;
+				dispatchEvent(evt);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Group width="40%">
+		<s:HGroup width="100%" verticalAlign="bottom">
+			<!-- Background and icon -->
+			<s:Group width="100%">
+				<s:BitmapImage source="@Embed(source='../images/CatagoryGroup.png', scaleGridLeft=60, scaleGridTop=45,
+							   scaleGridRight=75, scaleGridBottom=62)"
+							   scaleMode="stretch" fillMode="scale" 
+							   width="100%" height="100%" />
+				
+				<s:BitmapImage source="{icon}"
+							   left="13" top="12"/>
+			</s:Group>
+			
+			<!-- Label -->
+			<s:Label text="{title}" styleName="{this}"/>
+		</s:HGroup>
+	</s:Group>
+	
+	<crescent:List id="partsList" 
+				   width="60%" 
+				   dataProvider="{parts}" 
+				   itemRenderer="frameworks.cavalier.ui.activities.supportClasses.UIPartRenderer"
+		 		   horizontalScrollPolicy="off"	
+				   verticalScrollPolicy="off" 
+				   change="onListChange()" >
+		<crescent:layout>
+			<s:VerticalLayout paddingTop="15" />
+		</crescent:layout>
+	</crescent:List>
+	
+</s:HGroup>

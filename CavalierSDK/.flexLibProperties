@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="true" version="3">
+  <includeClasses>
+    <classEntry path="frameworks.cavalier.plugin.core.IPlugin"/>
+    <classEntry path="frameworks.cavalier.plugin.Plugin"/>
+    <classEntry path="frameworks.cavalier.plugin.managers.PluginManager"/>
+    <classEntry path="frameworks.cavalier.plugin.events.PluginEvent"/>
+    <classEntry path="frameworks.cavalier.plugin.events.PluginManagerEvent"/>
+    <classEntry path="frameworks.cavalier.plugin.core.ActivityDescriptor"/>
+    <classEntry path="frameworks.cavalier.ui.components.ActionTile"/>
+    <classEntry path="frameworks.cavalier.ui.components.skins.ActionTileSkin"/>
+    <classEntry path="frameworks.cavalier.ui.components.InfoTile"/>
+    <classEntry path="frameworks.cavalier.ui.components.skins.InfoTileSkin"/>
+    <classEntry path="frameworks.cavalier.ui.parts.UIPart"/>
+    <classEntry path="frameworks.cavalier.plugin.core.UIPartDescriptor"/>
+    <classEntry path="frameworks.cavalier.plugin.managers.UIPartManager"/>
+    <classEntry path="frameworks.cavalier.app.utils.BrandParser"/>
+    <classEntry path="frameworks.cavalier.app.utils.TagUtil"/>
+    <classEntry path="frameworks.cavalier.app.utils.ClipUtils"/>
+    <classEntry path="frameworks.cavalier.app.models.sync.Aggregator"/>
+    <classEntry path="frameworks.cavalier.app.controllers.PlaylistController"/>
+    <classEntry path="frameworks.cavalier.app.models.stat.YearStatistic"/>
+    <classEntry path="frameworks.cavalier.app.models.stat.MonthStatistic"/>
+    <classEntry path="frameworks.cavalier.app.models.stat.DateStatistic"/>
+    <classEntry path="frameworks.cavalier.app.events.StatisticEvent"/>
+    <classEntry path="frameworks.cavalier.ui.parts.StatisticUIPart"/>
+    <classEntry path="frameworks.cavalier.ui.parts.events.UIPartEvent"/>
+    <classEntry path="frameworks.cavalier.ui.components.PopOutButton"/>
+    <classEntry path="frameworks.cavalier.ui.components.skins.PopOutButtonSkin"/>
+    <classEntry path="frameworks.cavalier.plugin.core.UIPartCatagory"/>
+    <classEntry path="frameworks.cavalier.ui.parts.events.PlaylistSelectorEvent"/>
+    <classEntry path="frameworks.cavalier.app.controllers.ClipController"/>
+    <classEntry path="frameworks.cavalier.app.controllers.CommentController"/>
+    <classEntry path="frameworks.cavalier.app.events.ChromeEvent"/>
+    <classEntry path="frameworks.cavalier.ui.activities.managers.ActivityManager"/>
+    <classEntry path="frameworks.cavalier.ui.activities.layouts.LayoutTemplate"/>
+    <classEntry path="frameworks.cavalier.ui.activities.layouts.Template6"/>
+    <classEntry path="frameworks.cavalier.ui.activities.layouts.Template4"/>
+    <classEntry path="frameworks.cavalier.ui.activities.layouts.Template5"/>
+    <classEntry path="frameworks.cavalier.ui.activities.ActivityTemplate"/>
+    <classEntry path="frameworks.cavalier.ui.activities.layouts.Template2"/>
+    <classEntry path="frameworks.cavalier.ui.activities.layouts.ILayoutTemplate"/>
+    <classEntry path="frameworks.cavalier.ui.activities.layouts.Template3"/>
+    <classEntry path="frameworks.cavalier.ui.activities.layouts.Template1"/>
+    <classEntry path="frameworks.cavalier.ui.activities.events.ActivityTemplateEvent"/>
+    <classEntry path="frameworks.cavalier.ui.activities.LayoutChooser"/>
+    <classEntry path="frameworks.cavalier.ui.activities.UIPartChooser"/>
+    <classEntry path="frameworks.cavalier.ui.activities.supportClasses.UIPartHolder"/>
+    <classEntry path="frameworks.cavalier.ui.activities.supportClasses.UIPartCatagoryGroup"/>
+    <classEntry path="frameworks.cavalier.ui.activities.supportClasses.ActivityLayoutTileRenderer"/>
+    <classEntry path="frameworks.cavalier.ui.activities.supportClasses.UIPartRenderer"/>
+    <classEntry path="frameworks.cavalier.ui.components.skins.PagerSliderTrackSkin"/>
+    <classEntry path="frameworks.cavalier.ui.components.skins.PagerSliderThumbSkin"/>
+    <classEntry path="frameworks.cavalier.ui.components.skins.PagerSliderSkin"/>
+    <classEntry path="frameworks.cavalier.ui.components.PagerSlider"/>
+    <classEntry path="frameworks.cavalier.ui.components.supportClasses.PagerSliderThumb"/>
+    <classEntry path="frameworks.cavalier.messaging.SystemBus"/>
+    <classEntry path="frameworks.cavalier.messaging.models.MessageBase"/>
+    <classEntry path="frameworks.cavalier.messaging.models.MessageLevel"/>
+    <classEntry path="frameworks.cavalier.messaging.models.MessageCatagory"/>
+    <classEntry path="frameworks.cavalier.messaging.models.TextMessage"/>
+    <classEntry path="frameworks.cavalier.messaging.models.Log"/>
+    <classEntry path="frameworks.cavalier.messaging.events.MessageEvent"/>
+    <classEntry path="frameworks.cavalier.messaging.models.MessageStatus"/>
+    <classEntry path="frameworks.cavalier.messaging.IMessageRenderer"/>
+    <classEntry path="frameworks.cavalier.ui.components.RingMeter"/>
+    <classEntry path="frameworks.cavalier.messaging.events.SystemBusEvent"/>
+    <classEntry path="frameworks.cavalier.polkit.PolicyKit"/>
+    <classEntry path="frameworks.cavalier.polkit.Policy"/>
+    <classEntry path="frameworks.cavalier.polkit.PolicyKind"/>
+    <classEntry path="frameworks.cavalier.polkit.events.PolicyKitEvent"/>
+    <classEntry path="frameworks.cavalier.ui.messaging.MessageRenderer"/>
+    <classEntry path="frameworks.cavalier.ui.messaging.LogRenderer"/>
+    <classEntry path="frameworks.cavalier.ui.messaging.TextMessageRenderer"/>
+    <classEntry path="frameworks.cavalier.app.models.jobs.Job"/>
+    <classEntry path="frameworks.cavalier.app.models.jobs.CRUDAction"/>
+    <classEntry path="frameworks.cavalier.app.models.ModelBase"/>
+    <classEntry path="frameworks.cavalier.app.controllers.JobController"/>
+    <classEntry path="frameworks.cavalier.app.models.jobs.PlaylistJob"/>
+    <classEntry path="frameworks.cavalier.app.events.JobEvent"/>
+    <classEntry path="frameworks.cavalier.app.models.stat.SpecialStatisticEntries"/>
+    <classEntry path="frameworks.cavalier.plugin.core.ShortcutDescriptor"/>
+    <classEntry path="frameworks.cavalier.plugin.Shortcut"/>
+    <classEntry path="frameworks.cavalier.plugin.managers.ShortcutManager"/>
+    <classEntry path="frameworks.cavalier.app.models.ModelStatus"/>
+    <classEntry path="frameworks.cavalier.app.models.jobs.JobStatus"/>
+    <classEntry path="frameworks.cavalier.ui.parts.events.TagListEvent"/>
+    <classEntry path="frameworks.cavalier.app.controllers.TagController"/>
+    <classEntry path="frameworks.cavalier.app.models.AdDistributionRule"/>
+    <classEntry path="frameworks.cavalier.ui.layouts.FlowLayout"/>
+    <classEntry path="frameworks.cavalier.app.controllers.TrackingController"/>
+    <classEntry path="frameworks.cavalier.app.controllers.DBController"/>
+    <classEntry path="frameworks.cavalier.ui.components.TextWindow"/>
+    <classEntry path="frameworks.cavalier.app.models.jobs.AnnotationJob"/>
+    <classEntry path="frameworks.cavalier.plugin.core.ActionDescriptor"/>
+    <classEntry path="frameworks.cavalier.plugin.managers.ActionManager"/>
+  </includeClasses>
+  <includeResources>
+    <resourceEntry destPath="design.xml" sourcePath="design.xml"/>
+    <resourceEntry destPath="defaults.css" sourcePath="defaults.css"/>
+  </includeResources>
+  <namespaceManifests>
+    <namespaceManifestEntry manifest="manifest.xml" namespace="library://cavalier/frameworks/cavalier"/>
+  </namespaceManifests>
+</flexLibProperties>

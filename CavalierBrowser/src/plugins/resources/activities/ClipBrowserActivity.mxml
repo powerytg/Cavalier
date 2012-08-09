@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   xmlns:parts="plugins.resources.parts.*" 
+				   title="browse video clips"
+				   icon="@Embed('images/ClipBrowserActivityIcon.png')" >
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.jobs.ClipJob;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.plugin.managers.ShortcutManager;
+			import frameworks.cavalier.ui.activities.managers.ActivityManager;
+			import frameworks.cavalier.ui.messaging.InfoIndicator;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.effects.Animate;
+			import spark.effects.animation.MotionPath;
+			import spark.effects.animation.SimpleMotionPath;
+			
+			/**
+			 * @private
+			 */
+			private function onCalendarButtonClick():void{
+				if(calendarList.x == 0)
+					return;
+				
+				var mp:SimpleMotionPath = new SimpleMotionPath("x");
+				mp.valueBy = queryGroup.width;
+				
+				var animate:Animate = new Animate();
+				animate.targets = [calendarList, tagList];
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				
+				animate.play();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onTagButtonClick():void{
+				if(tagList.x == 0)
+					return;
+
+				var mp:SimpleMotionPath = new SimpleMotionPath("x");
+				mp.valueBy = -queryGroup.width;
+				
+				var animate:Animate = new Animate();
+				animate.targets = [calendarList, tagList];
+				animate.motionPaths = Vector.<MotionPath>([mp]);
+				
+				animate.play();
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onPropertyButtonClick():void{
+				ActivityManager.activityManager.lookAtOrCreateNewByClassName("ClipEditorActivity");
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onPreviewButtonClick():void{
+				ActivityManager.activityManager.lookAtOrCreateNewByClassName("PreviewActivity");
+			}
+			
+			/**
+			 * @private
+			 */
+			protected function onDeleteClipButtonClick():void{	
+				var clips:ArrayCollection = Aggregator.aggregator.clips;
+				var clip:Clip = Aggregator.aggregator.selectedClip;
+				
+				// Update views
+				selector.dataProvider.removeItemAt(selector.dataProvider.getItemIndex(clip));
+				
+				var job:ClipJob = new ClipJob();
+				job.action = CRUDAction.DELETE;
+				job.payload = clip;
+				JobController.jobController.submitJob(job);
+			}
+			
+			/**
+			 * @private
+			 *
+			 */
+			private function onImportClipButtonClick():void{
+				ShortcutManager.shortcutManager.evokeShortcutByClassName("ImportClipShortcut");
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAssignTagsClick():void{
+				if(!Aggregator.aggregator.selectedClip){
+					var info:InfoIndicator = new InfoIndicator();
+					info.text = "You should select a clip before adding tags";
+					info.show();
+						
+					return;
+				}
+				
+				var assignTagsActivity:AssignTagsActivity = new AssignTagsActivity();
+				assignTagsActivity.clip = Aggregator.aggregator.selectedClip;
+				ActivityManager.activityManager.addActivityToFront(assignTagsActivity);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAdOverrideClick():void{
+				ActivityManager.activityManager.lookAtOrCreateNewByClassName("AdCuePointEditorActivity");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" height="100%" gap="20">
+		<s:VGroup width="230" height="100%" gap="25">
+			<crescent:Section width="100%" height="150" title="Filters" >
+				<s:VGroup paddingTop="25">
+					<crescent:RadioButton label="Calendar" groupName="filterGroup" selected="true" click="onCalendarButtonClick()"/>
+					<crescent:RadioButton label="Tag" groupName="filterGroup" click="onTagButtonClick()"/>
+				</s:VGroup>
+			</crescent:Section>
+
+			<crescent:Section width="100%" height="100%" title="Selectors">
+				<s:Group id="queryGroup" width="100%" height="100%" clipAndEnableScrolling="true">
+					<parts:ClipCalendar id="calendarList" width="100%" height="100%"/>
+					<parts:TagListWithClipBadge id="tagList" width="100%" height="100%" x="{queryGroup.width}"/>
+				</s:Group>												
+			</crescent:Section>
+		</s:VGroup>
+
+		<parts:ClipSelector id="selector" width="100%" height="100%"/>
+		
+		<!-- Action buttons -->
+		<s:VGroup id="editors" width="140" gap="15" clipAndEnableScrolling="true">
+			<crescent:Button label="Properties" icon="@Embed('ui/chrome/images/PopOut.png')" width="100%" height="45" click="onPropertyButtonClick()"/>
+			<crescent:Button label="Assign Tags" icon="@Embed('ui/chrome/images/PopOut.png')" width="100%" height="45" click="onAssignTagsClick()"/>
+			<crescent:Button label="Override Ads" icon="@Embed('ui/chrome/images/PopOut.png')" width="100%" height="45" click="onAdOverrideClick()"/>
+			<crescent:Button label="Comments" icon="@Embed('ui/chrome/images/PopOut.png')" width="100%" height="45"/>
+			<crescent:Button label="Annotations" icon="@Embed('ui/chrome/images/PopOut.png')" width="100%" height="45"/>
+			
+			<s:Spacer height="20"/>
+			<crescent:Button label="Preview" icon="@Embed('ui/chrome/images/PopOut.png')" width="100%" height="45" click="onPreviewButtonClick()"/>
+			
+			<s:Spacer height="20"/>
+			<crescent:RedButton label="Delete Selected" width="100%" height="45" click="onDeleteClipButtonClick()"/>
+		</s:VGroup>
+
+	</s:HGroup>
+	
+	<crescent:actions>
+		<crescent:Button id="importClipButton" label="Import Clip" icon="@Embed('images/Add.png')" click="onImportClipButtonClick()"/>
+	</crescent:actions>
+	
+</crescent:Activity>

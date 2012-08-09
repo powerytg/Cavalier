@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<crescent:Activity xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:crescent="library://cavalier/frameworks/crescent"
+				   xmlns:parts="plugins.resources.parts.*"
+				   xmlns:adParts="plugins.advertising.parts.*"
+				   xmlns:supportClasses="plugins.advertising.activities.supportClasses.*" 
+				   title="ad cuepoints" 
+				   creationComplete="init()" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import frameworks.cavalier.app.controllers.JobController;
+			import frameworks.cavalier.app.models.AdCuePointEntry;
+			import frameworks.cavalier.app.models.Clip;
+			import frameworks.cavalier.app.models.jobs.CRUDAction;
+			import frameworks.cavalier.app.models.jobs.ClipJob;
+			import frameworks.cavalier.app.models.sync.Aggregator;
+			import frameworks.cavalier.ui.components.events.TimelineEvent;
+			import frameworks.crescent.activity.events.ActivityContainerEvent;
+			
+			import mx.events.EffectEvent;
+			
+			import plugins.advertising.activities.supportClasses.AdCuePointListEvent;
+			import plugins.advertising.indicators.AdTimelineIndicator;
+			
+			import spark.effects.Animate;
+			import spark.effects.animation.MotionPath;
+			import spark.effects.animation.SimpleMotionPath;
+			import spark.filters.BlurFilter;
+			
+			/**
+			 * @public
+			 */
+			[Bindable]
+			public var clip:Clip;
+			
+			/**
+			 * @private
+			 */
+			private var timelineIndicator:AdTimelineIndicator;
+			
+			/**
+			 * @private
+			 */
+			private function init():void{
+				clip = Aggregator.aggregator.selectedClip;
+				
+				if(!timelineIndicator){
+					timelineIndicator = new AdTimelineIndicator();
+					timelineIndicator.addEventListener(TimelineEvent.ITEM_SELECT, onAdSelectedInTimeline, false, 0, true);
+					timelineIndicator.clip = clip;
+					timelineIndicator.show();
+				}				
+				
+				adList.addEventListener(AdCuePointListEvent.ITEM_DELETE, onAdDelete, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			override public function destroy():void{
+				adList.removeEventListener(AdCuePointListEvent.ITEM_DELETE, onAdDelete);
+				
+				super.destroy();
+				
+				if(timelineIndicator){
+					timelineIndicator.removeEventListener(TimelineEvent.ITEM_SELECT, onAdSelectedInTimeline);
+					timelineIndicator.close();
+					timelineIndicator = null;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onActivited(evt:ActivityContainerEvent):void{
+				super.onActivited(evt);
+				
+				if(!timelineIndicator){
+					timelineIndicator = new AdTimelineIndicator();
+					timelineIndicator.addEventListener(TimelineEvent.ITEM_SELECT, onAdSelectedInTimeline, false, 0, true);
+					timelineIndicator.clip = clip;
+					timelineIndicator.show();
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			override protected function onDeactivited(evt:ActivityContainerEvent):void{
+				super.onDeactivited(evt);
+				
+				if(timelineIndicator){
+					timelineIndicator.removeEventListener(TimelineEvent.ITEM_SELECT, onAdSelectedInTimeline);
+					timelineIndicator.close();
+					timelineIndicator = null;
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function hideOverlay():void{
+				var leftAnimate:Animate = new Animate(leftGroup);
+				var leftMp:SimpleMotionPath = new SimpleMotionPath("x");
+				leftMp.valueTo = -305;
+				leftAnimate.motionPaths = Vector.<MotionPath>([leftMp]);
+				leftAnimate.play();
+				
+				var rightAnimate:Animate = new Animate(rightGroup);
+				var rightMp:SimpleMotionPath = new SimpleMotionPath("x");
+				rightMp.valueTo = width;
+				rightAnimate.motionPaths = Vector.<MotionPath>([rightMp]);
+				rightAnimate.play();
+				rightAnimate.addEventListener(EffectEvent.EFFECT_END, onHideOverlayEffectEnd, false, 0, true);
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onHideOverlayEffectEnd(evt:EffectEvent):void{
+				preview.filters = [];
+				toggleGroup.visible = true;
+				overlay.visible = false;				
+			}
+			
+			/**
+			 * @private
+			 */
+			private function showOverlay():void{
+				preview.pause();
+				
+				toggleGroup.visible = false;
+				leftGroup.x = -305;
+				rightGroup.x = width;
+				overlay.visible = true;
+				
+				var leftAnimate:Animate = new Animate(leftGroup);
+				var leftMp:SimpleMotionPath = new SimpleMotionPath("x");
+				leftMp.valueTo = 0;
+				leftAnimate.motionPaths = Vector.<MotionPath>([leftMp]);
+				leftAnimate.play();
+				
+				var rightAnimate:Animate = new Animate(rightGroup);
+				var rightMp:SimpleMotionPath = new SimpleMotionPath("x");
+				rightMp.valueTo = 305;
+				rightAnimate.motionPaths = Vector.<MotionPath>([rightMp]);
+				rightAnimate.play();
+				
+				// Hide video
+				preview.filters = [new BlurFilter(15, 15)];
+				
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAdDelete(evt:AdCuePointListEvent):void{
+				var job:ClipJob = new ClipJob();
+				job.action = CRUDAction.UPDATE;
+				job.payload = clip;
+				JobController.jobController.submitJob(job);
+				
+				for (var i:uint = 0; i < clip.ads.length; i++){
+					var item:AdCuePointEntry = clip.ads.getItemAt(i) as AdCuePointEntry;
+					if(item == evt.adCuePoint){
+						clip.ads.removeItemAt(i);
+						break;
+					}
+				}
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onAdSelectedInTimeline(evt:TimelineEvent):void{
+				evt.stopPropagation();
+				adList.selectedItem = evt.markerMetadata;
+			}
+			
+			/**
+			 * @private
+			 */
+			private function onCommitButtonClick():void{
+				JobController.jobController.commit();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<!-- Video surface -->
+	<s:Group id="layoutGroup" width="100%" height="100%">
+		<parts:ClipPreview id="preview" width="100%" height="100%" clip="{clip}"/>
+	</s:Group>
+
+	<!-- Overlay -->
+	<s:Scroller id="overlay" width="100%" height="100%"
+				horizontalScrollPolicy="off" verticalScrollPolicy="off"
+			 	visible="false"	>
+		<s:Group width="100%" height="100%">
+			<!-- Left side: banner, ad list -->
+			<s:VGroup id="leftGroup" x="0" width="305" height="100%" gap="0">
+				<s:BitmapImage source="@Embed('supportClasses/images/OrchestrateBanner.png')"/>
+				<s:Group width="100%" height="100%">
+					<s:BitmapImage source="@Embed('supportClasses/images/AdListPattern.png')" fillMode="repeat"
+								   width="100%" height="100%" />
+					<crescent:List id="adList" width="100%" height="100%"
+								   top="27" 
+								   dataProvider="{clip.ads}"
+								   itemRenderer="plugins.advertising.activities.supportClasses.AdCuePointListRenderer" />
+					
+				</s:Group>
+			</s:VGroup>
+			
+			<!-- Right side: insert button, selectors -->
+			<s:VGroup id="rightGroup" x="350" width="{width - 305}" height="100%" gap="0">
+				<s:HGroup width="100%" height="84" gap="0">
+					<crescent:Button id="insertAdsButton" width="100%" height="100%" skinClass="plugins.advertising.activities.supportClasses.InsertAdsButtonSkin"/>
+					<crescent:Button id="doneButton" width="60" height="100%" skinClass="plugins.advertising.activities.supportClasses.DoneOrchestrateAdsButtonSkin"
+									 icon="@Embed('supportClasses/images/DoneIcon.png')"
+									 click="hideOverlay()" />
+				</s:HGroup>
+				
+				
+				<s:HGroup width="100%" height="100%" gap="0">
+					<s:Group width="160" height="100%">
+						<s:BitmapImage width="100%" height="100%"
+									   source="@Embed('supportClasses/images/AdSelectorBackground.png')"
+									   alpha="0.6" />
+						<parts:TagList width="100%" height="100%"/>						
+					</s:Group>
+					<supportClasses:AdOrchestrateSelector id="adSelector" width="100%" height="100%"/>
+										
+				</s:HGroup>
+				
+			</s:VGroup>
+			
+		</s:Group>
+	</s:Scroller>	
+
+	<!-- Overlay toggle button -->
+	<s:HGroup id="toggleGroup" top="10" right="10" verticalAlign="middle">
+		<s:BitmapImage source="@Embed('supportClasses/images/ToggleAds.png')"/>
+		<s:Button id="overlayToggleButton" top="10" right="10" skinClass="plugins.advertising.activities.supportClasses.OrchestrateButtonSkin" click="showOverlay()"/>
+	</s:HGroup>
+	
+	<crescent:actions>
+		<crescent:Button id="commitButton" label="Commit Changes" click="onCommitButtonClick()"/>
+	</crescent:actions>
+	
+</crescent:Activity>
