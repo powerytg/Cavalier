@@ -36,3 +36,9 @@ The Cavalier Project is organized by the following modules:
 Author's Note
 
 Cavalier is meant to be a reference on how to architecture large scale Flex based project. While Flex itself is gradually being out paced by HTML5 by now, know that the same design/architecture principle applies exactly on both javascript and actionscript world!
+
+
+Screenshots:
+
+![Alt text](/screenshots/1.jpg "example")
+![Alt text](/screenshots/2.jpg "example")
